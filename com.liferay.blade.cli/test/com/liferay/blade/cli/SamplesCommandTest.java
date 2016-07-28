@@ -121,7 +121,7 @@ public class SamplesCommandTest {
 
 		new bladenofail().run(initArgs);
 
-		String[] samplesArgs = {"samples", "-d", "/test/workspace/modules", "blade.authfailure"};
+		String[] samplesArgs = {"samples", "-d", testDir.getPath() + "/test/workspace/modules", "blade.authfailure"};
 
 		new bladenofail().run(samplesArgs);
 
@@ -137,12 +137,13 @@ public class SamplesCommandTest {
 
 		File gradleWrapperShell = IO.getFile(projectDir, "gradlew");
 
-		assertFalse(buildFile.exists());
+		assertTrue(buildFile.exists());
 		assertFalse(gradleWrapperJar.exists());
 		assertFalse(gradleWrapperProperties.exists());
 		assertFalse(gradleWrapperShell.exists());
 
-		BuildTask buildtask = GradleRunnerUtil.executeGradleRunner(projectDir.getPath(), "formatSource", "build");
+		File workspaceDir = new File(testDir, "test/workspace");
+		BuildTask buildtask = GradleRunnerUtil.executeGradleRunner(workspaceDir.getPath(), "formatSource", "build");
 
 		GradleRunnerUtil.verifyGradleRunnerOutput(buildtask);
 
