@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import org.gradle.testkit.runner.BuildTask;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -36,6 +37,12 @@ import org.junit.Test;
  */
 public class SamplesCommandTest {
 	private File testDir;
+
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+		IO.copy(new File("wrapper.zip"), new File("bin_test/wrapper.zip"));
+	}
 
 	@Before
 	public void setUp() throws Exception {
