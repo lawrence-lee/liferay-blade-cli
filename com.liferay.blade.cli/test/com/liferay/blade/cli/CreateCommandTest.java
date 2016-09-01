@@ -30,6 +30,7 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
 import org.gradle.testkit.runner.BuildTask;
@@ -337,6 +338,12 @@ public class CreateCommandTest {
 			GradleRunnerUtil.verifyBuildOutput(projectPath + "/guestbook-api", "guestbook-api-1.0.0.jar");
 			GradleRunnerUtil.verifyBuildOutput(projectPath + "/guestbook-service", "guestbook-service-1.0.0.jar");
 		}
+
+		File serviceJar = new File(projectPath + "/guestbook-service/build/libs/guestbook-service-1.0.0.jar");
+
+		String springContext = new JarFile(serviceJar).getManifest().getMainAttributes().getValue("Liferay-Spring-Context");
+
+		assertTrue(springContext == "META-INF/spring");
 	}
 
 	@Test
@@ -797,6 +804,12 @@ public class CreateCommandTest {
 			GradleRunnerUtil.verifyBuildOutput(projectPath + "/sample/sample-api", "sample-api-1.0.0.jar");
 			GradleRunnerUtil.verifyBuildOutput(projectPath + "/sample/sample-service", "sample-service-1.0.0.jar");
 		}
+
+		File serviceJar = new File(projectPath + "/sample/sample-service/build/libs/sample-service-1.0.0.jar");
+
+		String springContext = new JarFile(serviceJar).getManifest().getMainAttributes().getValue("Liferay-Spring-Context");
+
+		assertTrue(springContext == "META-INF/spring");
 	}
 
 	@Test
