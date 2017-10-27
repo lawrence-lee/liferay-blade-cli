@@ -30,6 +30,11 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -43,10 +48,11 @@ import org.apache.commons.io.FileUtils;
  */
 public class InitCommand {
 
-	private final static String _PLUGINS_SDK_7_ZIP = "com.liferay.portal.plugins.sdk-7.0-ga3-20160804222206210.zip";
-	private final static String _PLUGINS_SDK_7_URL =
-		"http://downloads.sourceforge.net/project/lportal/Liferay%20Portal/7.0.2%20GA3/" +
-			_PLUGINS_SDK_7_ZIP;
+	private final static String _INSTALLER_PLUGINS_SDK_PATH = "com.liferay.portal.plugins.sdk-1.0.11-withdependencies";
+	private final static String _INSTALLER_PLUGINS_SDK_ZIP = _INSTALLER_PLUGINS_SDK_PATH + ".zip";
+	private final static String _PLUGINS_SDK_URL =
+		"https://cdn.lfrs.sl/repository.liferay.com/nexus/content/groups/public/com/liferay/portal/com.liferay.portal.plugins.sdk/1.0.11/" +
+			_INSTALLER_PLUGINS_SDK_ZIP;
 
 	private final static String[] _SDK_6_GA5_FILES = {
 		"app-servers.gradle", "build.gradle", "build-plugins.gradle",
@@ -55,8 +61,6 @@ public class InitCommand {
 
 	public static final String DESCRIPTION =
 		"Initializes a new Liferay workspace";
-
-	public static final String WORKSPACE_VERSION = "1.0.40";
 
 	public InitCommand(blade blade, InitOptions options) throws Exception {
 		_blade = blade;
@@ -86,14 +90,15 @@ public class InitCommand {
 							"Found plugins-sdk 6.2, upgraded to 7.0, moving contents to new subdirectory " +
 								"and initing workspace.");
 
-						File sdk7zip = new File (_blade.getCacheDir(), _PLUGINS_SDK_7_ZIP);
+						File sdk7zip = new File (_blade.getBundleDir(), _INSTALLER_PLUGINS_SDK_ZIP);
 
 						if (!sdk7zip.exists()) {
-							FileUtils.copyURLToFile(new URL(_PLUGINS_SDK_7_URL), sdk7zip);
+							trace("Downloading " + _PLUGINS_SDK_URL);
+							FileUtils.copyURLToFile(new URL(_PLUGINS_SDK_URL), sdk7zip);
 						}
 
 						try {
-							Util.unzip(sdk7zip, destDir, "com.liferay.portal.plugins.sdk-7.0/");
+							Util.unzip(sdk7zip, destDir, _INSTALLER_PLUGINS_SDK_PATH + "/");
 						}
 						catch (Exception e) {
 							addError("Opening zip file error, "
@@ -246,8 +251,30 @@ public class InitCommand {
 
 		dest.mkdirs();
 
-		for( File fileToCopy : filesToCopy) {
+		for (File fileToCopy : filesToCopy) {
 			IO.copy(fileToCopy, new File(dest, fileToCopy.getName()));
+
+			Files.walkFileTree(fileToCopy.toPath(), new SimpleFileVisitor<Path>() {
+
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					if (Util.isWindows() && !dir.toFile().canWrite()) {
+						Files.setAttribute(dir, "dos:readonly", false);
+					}
+
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					if (Util.isWindows() && !file.toFile().canWrite()) {
+						Files.setAttribute(file, "dos:readonly", false);
+					}
+
+					return FileVisitResult.CONTINUE;
+				}
+			});
+
 			IO.deleteWithException(fileToCopy);
 		}
 	}

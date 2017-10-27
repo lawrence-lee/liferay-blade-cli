@@ -23,17 +23,17 @@ import aQute.lib.getopt.Description;
 import aQute.lib.getopt.Options;
 import aQute.lib.io.IO;
 
+import com.liferay.blade.cli.ConvertCommand.ConvertOptions;
 import com.liferay.blade.cli.CreateCommand.CreateOptions;
 import com.liferay.blade.cli.DeployCommand.DeployOptions;
 import com.liferay.blade.cli.GradleCommand.GradleOptions;
 import com.liferay.blade.cli.InitCommand.InitOptions;
 import com.liferay.blade.cli.InstallCommand.InstallOptions;
-import com.liferay.blade.cli.MigrateThemeCommand.MigrateThemeOptions;
-import com.liferay.blade.cli.MigrateWarCommand.MigrateWarOptions;
 import com.liferay.blade.cli.OpenCommand.OpenOptions;
 import com.liferay.blade.cli.SamplesCommand.SamplesOptions;
 import com.liferay.blade.cli.ServerCommand.ServerOptions;
 import com.liferay.blade.cli.ShellCommand.ShellOptions;
+import com.liferay.blade.cli.UpgradePropsCommand.UpgradePropsOptions;
 
 import java.io.File;
 import java.io.IOException;
@@ -96,16 +96,6 @@ public class blade extends AbstractConsoleApp implements Runnable {
 		new InstallCommand(this, options).execute();
 	}
 
-	@Description(MigrateThemeCommand.DESCRIPTION)
-	public void _migrateTheme(MigrateThemeOptions options) throws Exception {
-		new MigrateThemeCommand(this, options).execute();
-	}
-
-	@Description(MigrateWarCommand.DESCRIPTION)
-	public void _migrateWar(MigrateWarOptions options) throws Exception {
-		new MigrateWarCommand(this, options).execute();
-	}
-
 	@Description(OpenCommand.DESCRIPTION)
 	public void _open(OpenOptions options) throws Exception {
 		new OpenCommand(this, options).execute();
@@ -140,6 +130,16 @@ public class blade extends AbstractConsoleApp implements Runnable {
 		new UpdateCommand(this, options).execute();
 	}
 
+	@Description(UpgradePropsCommand.DESCRIPTION)
+	public void _upgradeProps(UpgradePropsOptions options) throws Exception {
+		new UpgradePropsCommand(this, options);
+	}
+
+	@Description(ConvertCommand.DESCRIPTION)
+	public void _convert(ConvertOptions options) throws Exception {
+		new ConvertCommand(this, options).execute();
+	}
+
 	@Description("Show version information about blade")
 	public void _version(Options options) throws IOException {
 		Enumeration<URL> e =
@@ -168,6 +168,12 @@ public class blade extends AbstractConsoleApp implements Runnable {
 
 	public PrintStream err() {
 		return err;
+	}
+
+	public File getBundleDir() {
+		String userHome = System.getProperty("user.home");
+
+		return IO.getFile(userHome + "/.liferay/bundles");
 	}
 
 	public File getCacheDir() {

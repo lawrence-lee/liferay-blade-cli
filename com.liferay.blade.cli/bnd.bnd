@@ -1,4 +1,4 @@
-Bundle-Version: 2.0.2.${tstamp}
+Bundle-Version: 2.3.0.${tstamp}
 
 JPM-Command: blade
 
@@ -143,6 +143,7 @@ Private-Package:\
 	aQute.libg.qtokens;-split-package:=merge-first,\
 	aQute.service.reporter;-split-package:=merge-first,\
 	com.liferay.blade.cli.*,\
+	com.liferay.properties.locator,\
 	com.liferay.blade.gradle.model,\
 	org.apache.commons.io,\
 	org.apache.commons.io.filefilter,\
@@ -151,6 +152,7 @@ Private-Package:\
 	org.apache.commons.lang3.exception,\
 	org.apache.commons.lang3.text,\
 	org.gradle.*,\
+	org.objectweb.asm.*,\
 	org.osgi.dto,\
 	org.osgi.framework;-split-package:=merge-first,\
 	org.osgi.framework.dto,\
@@ -167,11 +169,11 @@ Private-Package:\
 	org.slf4j.impl
 
 -buildpath: \
-	aQute.libg,\
-	biz.aQute.bndlib,\
-	biz.aQute.repository,\
+	aQute.libg;version=3.4.0,\
+	biz.aQute.bndlib;version=3.4.0,\
+	biz.aQute.repository;version=3.4.0,\
 	com.liferay.blade.gradle.model;version=latest,\
-	com.liferay.project.templates;version=2.1.2,\
+	com.liferay.project.templates;version=latest,\
 	jcl.over.slf4j,\
 	org.apache.commons.io,\
 	org.apache.commons.lang3,\
@@ -196,6 +198,7 @@ Private-Package:\
 	org.eclipse.aether.transport.http,\
 	org.eclipse.aether.transport.wagon,\
 	org.eclipse.aether.util,\
+	org.objectweb.asm,\
 	osgi.core,\
 	slf4j.simple,\
 	slf4j.api,\
@@ -206,7 +209,8 @@ Private-Package:\
 -includeresource: \
 	@com.liferay.project.templates-*.jar,\
 	deps.zip,\
-	wrapper.zip
+	wrapper.zip,\
+	mvnw.cmd
 
 -sources: false
 

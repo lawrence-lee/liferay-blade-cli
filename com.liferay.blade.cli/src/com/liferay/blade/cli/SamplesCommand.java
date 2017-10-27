@@ -23,9 +23,7 @@ import aQute.lib.getopt.Options;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
-
 import java.nio.file.Files;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -83,9 +81,9 @@ public class SamplesCommand {
 
 		File bladeRepo = new File(_blade.getCacheDir(), _BLADE_REPO_NAME);
 
-		File liferayGradleSamples = new File(bladeRepo, "liferay-gradle");
+		File gradleSamples = new File(bladeRepo, "gradle");
 
-		for (File file : liferayGradleSamples.listFiles()) {
+		for (File file : gradleSamples.listFiles()) {
 			String fileName = file.getName();
 
 			if (file.isDirectory() && fileName.equals(sampleName)) {
@@ -141,11 +139,11 @@ public class SamplesCommand {
 	private void listSamples() {
 		File bladeRepo = new File(_blade.getCacheDir(), _BLADE_REPO_NAME);
 
-		File liferayGradleSamples = new File(bladeRepo, "liferay-gradle");
+		File gradleSamples = new File(bladeRepo, "gradle");
 
 		List<String> samples = new ArrayList<>();
 
-		for (File file : liferayGradleSamples.listFiles()) {
+		for (File file : gradleSamples.listFiles()) {
 			String fileName = file.getName();
 
 			if (file.isDirectory() && fileName.startsWith("blade.")) {
@@ -242,7 +240,7 @@ public class SamplesCommand {
 
 		if (!Util.isWorkspace(dir)) {
 			File parentBuildGradleFile = new File(
-				bladeRepo, "liferay-gradle/build.gradle");
+				bladeRepo, "gradle/build.gradle");
 
 			String parentBuildScript = parseGradleScript(
 				Util.read(parentBuildGradleFile), "buildscript", false);
@@ -262,13 +260,13 @@ public class SamplesCommand {
 	}
 
 	private static final String _BLADE_REPO_ARCHIVE_NAME =
-		"liferay-blade-samples-master.zip";
+		"liferay-blade-samples-2.x.zip";
 
 	private static final String _BLADE_REPO_NAME =
-		"liferay-blade-samples-master";
+		"liferay-blade-samples-2.x";
 
 	private static final String _BLADE_REPO_URL =
-		"https://github.com/liferay/liferay-blade-samples/archive/master.zip";
+		"https://github.com/liferay/liferay-blade-samples/archive/2.x.zip";
 
 	private static final long _FILE_EXPIRATION_TIME = 604800000;
 
