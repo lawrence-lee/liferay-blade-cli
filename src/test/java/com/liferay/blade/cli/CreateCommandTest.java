@@ -313,8 +313,8 @@ public class CreateCommandTest {
 		_contains(
 			_checkFileExists(projectPath + "/src/main/java/gradle/test/portlet/FooPortlet.java"),
 			new String[] {
-				"^package gradle.test.portlet;.*", ".*javax.portlet.display-name=gradle.test.*",
-				".*^public class FooPortlet .*", ".*printWriter.print\\(\\\"gradle.test Portlet.*"
+				"^package gradle.test.portlet;.*", ".*javax.portlet.display-name=Foo.*",
+				".*^public class FooPortlet .*", ".*printWriter.print\\(\\\"foo Portlet.*"
 			});
 
 		BuildTask buildTask = GradleRunnerUtil.executeGradleRunner(projectPath, "build");
@@ -1013,8 +1013,8 @@ public class CreateCommandTest {
 		_contains(
 			_checkFileExists(projectPath + "/gradle.test/src/main/java/gradle/test/portlet/FooPortlet.java"),
 			new String[] {
-				"^package gradle.test.portlet;.*", ".*javax.portlet.display-name=gradle.test.*",
-				".*^public class FooPortlet .*", ".*printWriter.print\\(\\\"gradle.test Portlet.*"
+				"^package gradle.test.portlet;.*", ".*javax.portlet.display-name=Foo.*",
+				".*^public class FooPortlet .*", ".*printWriter.print\\(\\\"foo Portlet.*"
 			});
 
 		_lacks(
