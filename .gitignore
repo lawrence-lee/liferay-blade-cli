@@ -6,5 +6,4 @@
 .settings
 bin
 build
-/deps.zip
-/wrapper.zip
+mavenRepo

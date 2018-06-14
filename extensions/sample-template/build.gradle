@@ -1,0 +1,33 @@
+buildscript {
+	dependencies {
+		classpath group: "biz.aQute.bnd", name: "biz.aQute.bnd.gradle", version: "3.5.0"
+		classpath group: "com.liferay", name: "com.liferay.gradle.plugins.source.formatter", version: "latest.release"
+	}
+
+	repositories {
+		maven {
+			url "https://repository-cdn.liferay.com/nexus/content/groups/public"
+		}
+	}
+}
+
+apply plugin: "biz.aQute.bnd.builder"
+apply plugin: "com.liferay.source.formatter"
+apply plugin: "eclipse"
+apply plugin: "java"
+
+checkSourceFormatting {
+	maxLineLength = 120
+}
+
+eclipse {
+	classpath {
+		sourceSets -= [sourceSets.main]
+	}
+}
+
+formatSource {
+	maxLineLength = 120
+}
+
+jar.baseName = "com.liferay.project.templates.sample-1.0.0"
