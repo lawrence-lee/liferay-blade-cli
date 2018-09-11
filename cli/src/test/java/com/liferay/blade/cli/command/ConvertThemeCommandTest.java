@@ -17,6 +17,7 @@
 package com.liferay.blade.cli.command;
 
 import com.liferay.blade.cli.BladeTest;
+import com.liferay.blade.cli.BladeTestResults;
 import com.liferay.blade.cli.TestUtil;
 
 import java.io.ByteArrayOutputStream;
@@ -42,9 +43,11 @@ public class ConvertThemeCommandTest {
 
 		String[] args = {"--base", workspace.getAbsolutePath(), "convert", "-l"};
 
-		String content = TestUtil.runBlade(args);
+		BladeTestResults bladeTestResults = TestUtil.runBlade(temporaryFolder.getRoot(), args);
 
-		Assert.assertTrue(content, content.contains("compass-theme"));
+		String output = bladeTestResults.getOutput();
+
+		Assert.assertTrue(output, output.contains("compass-theme"));
 	}
 
 	@Ignore
@@ -56,9 +59,11 @@ public class ConvertThemeCommandTest {
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-		PrintStream ps = new PrintStream(baos);
+		PrintStream out = new PrintStream(baos);
 
-		new BladeTest(ps).run(args);
+		BladeTest bladeTest = new BladeTest(out, null, System.in, temporaryFolder.getRoot());
+
+		bladeTest.run(args);
 
 		File oldCompassTheme = new File(workspace, "plugins-sdk/themes/compass-theme");
 

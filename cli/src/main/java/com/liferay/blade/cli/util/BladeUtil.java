@@ -23,17 +23,13 @@ import aQute.bnd.osgi.Resource;
 import aQute.lib.io.IO;
 
 import com.liferay.blade.cli.BladeCLI;
-import com.liferay.blade.cli.Extensions;
-import com.liferay.blade.cli.WorkspaceConstants;
 import com.liferay.project.templates.ProjectTemplates;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
@@ -43,23 +39,29 @@ import java.net.Socket;
 import java.net.URL;
 
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -124,43 +126,35 @@ public class BladeUtil {
 	}
 
 	public static File findParentFile(File dir, String[] fileNames, boolean checkParents) {
-		if (dir == null) {
-			return null;
-		}
-		else if (".".equals(dir.toString()) || !dir.isAbsolute()) {
-			try {
-				dir = dir.getCanonicalFile();
-			}
-			catch (Exception e) {
-				dir = dir.getAbsoluteFile();
-			}
-		}
+		return _findParentFile(dir, fileNames, checkParents, false, 1, 0);
+	}
 
-		for (String fileName : fileNames) {
-			File file = new File(dir, fileName);
+	public static File findParentFile(File dir, String[] fileNames, boolean checkParents, int maxDepth) {
+		return _findParentFile(dir, fileNames, checkParents, false, maxDepth, 0);
+	}
 
-			if (file.exists()) {
-				return dir;
-			}
-		}
+	public static File findParentFileRecursive(File dir, String[] fileNames, boolean checkParents) {
+		return _findParentFile(dir, fileNames, checkParents, true, 1, 0);
+	}
 
-		if (checkParents) {
-			return findParentFile(dir.getParentFile(), fileNames, checkParents);
-		}
-
-		return null;
+	public static File findParentFileRecursive(File dir, String[] fileNames, boolean checkParents, int maxDepth) {
+		return _findParentFile(dir, fileNames, checkParents, true, maxDepth, 0);
 	}
 
 	public static List<Properties> getAppServerProperties(File dir) {
-		File projectRoot = findParentFile(dir, _APP_SERVER_PROPERTIES_FILE_NAMES, true);
+		return new ArrayList<>(getAppServerPropertiesMap(dir).values());
+	}
 
-		List<Properties> properties = new ArrayList<>();
+	public static Map<File, Properties> getAppServerPropertiesMap(File dir) {
+		File projectRoot = findParentFileRecursive(dir, _APP_SERVER_PROPERTIES_FILE_NAMES, true, 2);
+
+		Map<File, Properties> properties = new HashMap<>();
 
 		for (String fileName : _APP_SERVER_PROPERTIES_FILE_NAMES) {
 			File file = new File(projectRoot, fileName);
 
 			if (file.exists()) {
-				properties.add(getProperties(file));
+				properties.put(file, getProperties(file));
 			}
 		}
 
@@ -171,20 +165,9 @@ public class BladeUtil {
 		return getManifestProperty(pathToJar, "Bundle-Version");
 	}
 
-	public static Properties getGradleProperties(File dir) {
-		File file = getGradlePropertiesFile(dir);
-
-		return getProperties(file);
-	}
-
-	public static File getGradlePropertiesFile(File dir) {
-		File gradlePropertiesFile = new File(getWorkspaceDir(dir), _GRADLE_PROPERTIES_FILE_NAME);
-
-		return gradlePropertiesFile;
-	}
-
 	public static File getGradleWrapper(File dir) {
-		File gradleRoot = findParentFile(dir, new String[] {_GRADLEW_UNIX_FILE_NAME, _GRADLEW_WINDOWS_FILE_NAME}, true);
+		File gradleRoot = findParentFile(
+			dir, new String[] {_GRADLEW_UNIX_FILE_NAME, _GRADLEW_WINDOWS_FILE_NAME}, true, Integer.MAX_VALUE);
 
 		if (gradleRoot != null) {
 			if (isWindows()) {
@@ -223,14 +206,63 @@ public class BladeUtil {
 		}
 	}
 
-	public static Collection<String> getTemplateNames() throws Exception {
-		Map<String, String> templates = getTemplates();
+	public static Optional<Path> getServerPathByType(Path path, String... types) {
+		Optional<Path> serverPath;
+		Iterator<Path> i = path.iterator();
+		int serverPathIndex = -1;
+		int x = 0;
+		boolean absolutePath = path.isAbsolute();
+		Optional<Path> rootPathOptional;
+
+		if (absolutePath) {
+			rootPathOptional = Optional.of(path.getRoot());
+		}
+		else {
+			rootPathOptional = Optional.empty();
+		}
+		while (i.hasNext() && (serverPathIndex == -1)) {
+			Path pathPart = i.next();
+
+			String pathPartString = String.valueOf(pathPart);
+
+			for (String type : types) {
+				if (pathPartString.startsWith(type)) {
+					serverPathIndex = x;
+
+					break;
+				}
+			}
+
+			x++;
+		}
+
+		if (serverPathIndex > -1) {
+			Path subpath = path.subpath(0, x);
+
+			if (absolutePath) {
+				Path rootPath = rootPathOptional.get();
+
+				serverPath = Optional.of(rootPath.resolve(subpath));
+			}
+			else {
+				serverPath = Optional.of(subpath);
+			}
+		}
+		else {
+			serverPath = Optional.empty();
+		}
+
+		return serverPath;
+	}
+
+	public static Collection<String> getTemplateNames(BladeCLI blade) throws Exception {
+		Map<String, String> templates = getTemplates(blade);
 
 		return templates.keySet();
 	}
 
-	public static Map<String, String> getTemplates() throws Exception {
-		Path extensions = Extensions.getDirectory();
+	public static Map<String, String> getTemplates(BladeCLI bladeCLI) throws Exception {
+		Path extensions = bladeCLI.getExtensionsPath();
 
 		Collection<File> templatesFiles = new HashSet<>();
 
@@ -239,29 +271,8 @@ public class BladeUtil {
 		return ProjectTemplates.getTemplates(templatesFiles);
 	}
 
-	public static File getWorkspaceDir(BladeCLI blade) {
-		return getWorkspaceDir(blade.getBase());
-	}
-
-	public static File getWorkspaceDir(File dir) {
-		File gradleParent = findParentFile(
-			dir, new String[] {_SETTINGS_GRADLE_FILE_NAME, _GRADLE_PROPERTIES_FILE_NAME}, true);
-
-		if ((gradleParent != null) && gradleParent.exists()) {
-			return gradleParent;
-		}
-
-		File mavenParent = findParentFile(dir, new String[] {"pom.xml"}, true);
-
-		if (_isWorkspacePomFile(new File(mavenParent, "pom.xml"))) {
-			return mavenParent;
-		}
-
-		return null;
-	}
-
 	public static boolean hasGradleWrapper(File dir) {
-		if (new File(dir, "gradlew").exists() && new File(dir, "gradlew.bat").exists()) {
+		if (new File(dir, _GRADLEW_UNIX_FILE_NAME).exists() && new File(dir, _GRADLEW_WINDOWS_FILE_NAME).exists()) {
 			return true;
 		}
 		else {
@@ -323,59 +334,6 @@ public class BladeUtil {
 		return osName.contains("windows");
 	}
 
-	public static boolean isWorkspace(BladeCLI blade) {
-		File dirToCheck;
-
-		if ((blade == null) || (blade.getBase() == null)) {
-			dirToCheck = new File(".").getAbsoluteFile();
-		}
-		else {
-			dirToCheck = blade.getBase();
-		}
-
-		return isWorkspace(dirToCheck);
-	}
-
-	public static boolean isWorkspace(File dir) {
-		File workspaceDir = getWorkspaceDir(dir);
-
-		File gradleFile = new File(workspaceDir, _SETTINGS_GRADLE_FILE_NAME);
-
-		if (!gradleFile.exists()) {
-			File pomFile = new File(workspaceDir, "pom.xml");
-
-			if (_isWorkspacePomFile(pomFile)) {
-				return true;
-			}
-
-			return false;
-		}
-
-		try {
-			String script = read(gradleFile);
-
-			Matcher matcher = WorkspaceConstants.patternWorkspacePlugin.matcher(script);
-
-			if (matcher.find()) {
-				return true;
-			}
-			else {
-				//For workspace plugin < 1.0.5
-
-				gradleFile = new File(workspaceDir, _BUILD_GRADLE_FILE_NAME);
-
-				script = read(gradleFile);
-
-				matcher = WorkspaceConstants.patternWorkspacePlugin.matcher(script);
-
-				return matcher.find();
-			}
-		}
-		catch (Exception e) {
-			return false;
-		}
-	}
-
 	public static boolean isZipValid(File file) {
 		try (ZipFile zipFile = new ZipFile(file)) {
 			return true;
@@ -395,19 +353,15 @@ public class BladeUtil {
 
 				@Override
 				public void run() {
-					try (InputStreamReader isr = new InputStreamReader(inputStream);
-						BufferedReader br = new BufferedReader(isr)) {
 
-						String line = null;
+					try (Scanner scanner = new Scanner(inputStream)) {
+						while (scanner.hasNextLine()) {
+							String line = scanner.nextLine();
 
-						while ((line = br.readLine()) != null) {
-							AnsiLinePrinter.println(printStream, line);
+							if (line != null) {
+								AnsiLinePrinter.println(printStream, line);
+							}
 						}
-
-						inputStream.close();
-					}
-					catch (IOException ioe) {
-						ioe.printStackTrace();
 					}
 				}
 
@@ -421,13 +375,17 @@ public class BladeUtil {
 			try (ZipFile zipFile = new ZipFile(path.toFile())) {
 				Stream<? extends ZipEntry> stream = zipFile.stream();
 
-				return stream.filter(
-					entry -> !entry.isDirectory()
-				).map(
-					ZipEntry::getName
-				).anyMatch(
-					test
-				);
+				Collection<ZipEntry> entryCollection = stream.collect(Collectors.toSet());
+
+				for (ZipEntry zipEntry : entryCollection) {
+					if (!zipEntry.isDirectory()) {
+						String entryName = zipEntry.getName();
+
+						if (test.test(entryName)) {
+							return true;
+						}
+					}
+				}
 
 			}
 			catch (Exception e) {
@@ -459,54 +417,42 @@ public class BladeUtil {
 		processBuilder.command(commands);
 	}
 
-	public static Process startProcess(BladeCLI blade, String command) throws Exception {
-		return startProcess(blade, command, blade.getBase(), null, true);
+	public static Process startProcess(File workingDir, String command) throws Exception {
+		return startProcess(command, workingDir, null);
 	}
 
-	public static Process startProcess(BladeCLI blade, String command, File dir, boolean inheritIO) throws Exception {
-		return startProcess(blade, command, dir, null, inheritIO);
-	}
-
-	public static Process startProcess(BladeCLI blade, String command, File dir, Map<String, String> environment)
-		throws Exception {
-
-		return startProcess(blade, command, dir, environment, true);
-	}
-
-	public static Process startProcess(
-			BladeCLI blade, String command, File dir, Map<String, String> environment, boolean inheritIO)
-		throws Exception {
-
-		ProcessBuilder processBuilder = new ProcessBuilder();
-
-		Map<String, String> env = processBuilder.environment();
-
-		if (environment != null) {
-			env.putAll(environment);
-		}
-
-		if ((dir != null) && dir.exists()) {
-			processBuilder.directory(dir);
-		}
-
-		setShell(processBuilder, command);
-
-		if (inheritIO) {
-			processBuilder.inheritIO();
-		}
+	public static Process startProcess(String command, File dir, Map<String, String> environment) throws Exception {
+		ProcessBuilder processBuilder = _buildProcessBuilder(command, dir, environment, true);
 
 		Process process = processBuilder.start();
-
-		if (!inheritIO) {
-			readProcessStream(process.getInputStream(), blade.out());
-			readProcessStream(process.getErrorStream(), blade.err());
-		}
 
 		OutputStream outputStream = process.getOutputStream();
 
 		outputStream.close();
 
 		return process;
+	}
+
+	public static Process startProcess(
+			String command, File dir, Map<String, String> environment, PrintStream out, PrintStream err)
+		throws Exception {
+
+		ProcessBuilder processBuilder = _buildProcessBuilder(command, dir, environment, false);
+
+		Process process = processBuilder.start();
+
+		readProcessStream(process.getInputStream(), out);
+		readProcessStream(process.getErrorStream(), err);
+
+		OutputStream outputStream = process.getOutputStream();
+
+		outputStream.close();
+
+		return process;
+	}
+
+	public static Process startProcess(String command, File dir, PrintStream out, PrintStream err) throws Exception {
+		return startProcess(command, dir, null, out, err);
 	}
 
 	public static void unzip(File srcFile, File destDir) throws IOException {
@@ -582,6 +528,30 @@ public class BladeUtil {
 		}
 	}
 
+	private static ProcessBuilder _buildProcessBuilder(
+		String command, File dir, Map<String, String> environment, boolean inheritIO) {
+
+		ProcessBuilder processBuilder = new ProcessBuilder();
+
+		Map<String, String> env = processBuilder.environment();
+
+		if (environment != null) {
+			env.putAll(environment);
+		}
+
+		if ((dir != null) && dir.exists()) {
+			processBuilder.directory(dir);
+		}
+
+		setShell(processBuilder, command);
+
+		if (inheritIO) {
+			processBuilder.inheritIO();
+		}
+
+		return processBuilder;
+	}
+
 	private static boolean _canConnect(InetSocketAddress localAddress, InetSocketAddress remoteAddress) {
 		boolean connected = false;
 
@@ -600,6 +570,77 @@ public class BladeUtil {
 		}
 
 		return false;
+	}
+
+	private static boolean _fileNamesMatch(String[] fileNames, Path path) {
+		try (Stream<String> stream = Stream.of(fileNames)) {
+			String pathString = String.valueOf(path);
+
+			return stream.anyMatch(pathString::equals);
+		}
+	}
+
+	private static File _findParentFile(
+		File dir, String[] fileNames, boolean checkParents, boolean recursive, int maxDepth, int curDepth) {
+
+		if ((dir == null) || !dir.exists() || _isRoot(dir.toPath())) {
+			return null;
+		}
+		else if (".".equals(dir.toString()) || !dir.isAbsolute()) {
+			try {
+				dir = dir.getCanonicalFile();
+			}
+			catch (Exception e) {
+				dir = dir.getAbsoluteFile();
+			}
+		}
+
+		Path dirPath = dir.toPath();
+
+		for (String fileName : fileNames) {
+			File file = new File(dir, fileName);
+
+			if (file.exists()) {
+				return dir;
+			}
+		}
+
+		try (Stream<Path> filePaths = Files.find(
+				dirPath, recursive ? maxDepth : 1,
+				(p, b) ->
+					!Files.isDirectory(p) &&
+					_fileNamesMatch(fileNames, p.getFileName()))) {
+
+			Optional<Path> filePathOptional = filePaths.findFirst();
+
+			if (filePathOptional.isPresent()) {
+				Path filePath = filePathOptional.get();
+
+				filePath = filePath.getParent();
+
+				return filePath.toFile();
+			}
+		}
+		catch (Throwable th) {
+		}
+
+		if (checkParents && (maxDepth > curDepth)) {
+			return _findParentFile(dir.getParentFile(), fileNames, checkParents, recursive, maxDepth, curDepth++);
+		}
+
+		return null;
+	}
+
+	private static boolean _isRoot(Path path) {
+		FileSystem fileSystem = FileSystems.getDefault();
+
+		Iterable<Path> rootDirectoriesIterable = fileSystem.getRootDirectories();
+
+		Iterator<Path> rootDirectories = rootDirectoriesIterable.iterator();
+
+		Path root = rootDirectories.next();
+
+		return Objects.equals(path, root);
 	}
 
 	private static boolean _isSafelyRelative(File file, File destDir) {
@@ -636,28 +677,6 @@ public class BladeUtil {
 		return false;
 	}
 
-	private static boolean _isWorkspacePomFile(File pomFile) {
-		boolean pom = false;
-
-		if ((pomFile != null) && "pom.xml".equals(pomFile.getName()) && pomFile.exists()) {
-			pom = true;
-		}
-
-		if (pom) {
-			try {
-				String content = read(pomFile);
-
-				if (content.contains("portal.tools.bundle.support")) {
-					return true;
-				}
-			}
-			catch (Exception e) {
-			}
-		}
-
-		return false;
-	}
-
 	private static final String[] _APP_SERVER_PROPERTIES_FILE_NAMES = {
 		"app.server." + System.getProperty("user.name") + ".properties",
 		"app.server." + System.getenv("COMPUTERNAME") + ".properties",
@@ -668,14 +687,8 @@ public class BladeUtil {
 		"build." + System.getenv("HOSTNAME") + ".properties", "build.properties"
 	};
 
-	private static final String _BUILD_GRADLE_FILE_NAME = "build.gradle";
-
-	private static final String _GRADLE_PROPERTIES_FILE_NAME = "gradle.properties";
-
 	private static final String _GRADLEW_UNIX_FILE_NAME = "gradlew";
 
 	private static final String _GRADLEW_WINDOWS_FILE_NAME = "gradlew.bat";
-
-	private static final String _SETTINGS_GRADLE_FILE_NAME = "settings.gradle";
 
 }

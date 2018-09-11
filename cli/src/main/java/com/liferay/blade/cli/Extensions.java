@@ -84,37 +84,6 @@ public class Extensions implements AutoCloseable {
 		);
 	}
 
-	public static Path getDirectory() {
-		try {
-			Path userHomePath = BladeCLI.USER_HOME_DIR.toPath();
-
-			Path dotBladePath = userHomePath.resolve(".blade");
-
-			if (Files.notExists(dotBladePath)) {
-				Files.createDirectories(dotBladePath);
-			}
-			else if (!Files.isDirectory(dotBladePath)) {
-				throw new Exception(".blade is not a directory!");
-			}
-
-			Path extensions = dotBladePath.resolve("extensions");
-
-			if (Files.notExists(extensions)) {
-				Files.createDirectories(extensions);
-			}
-			else if (!Files.isDirectory(extensions)) {
-				throw new Exception(".blade/extensions is not a directory!");
-			}
-
-			return extensions;
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-
-			throw new RuntimeException(e);
-		}
-	}
-
 	public static String[] sortArgs(Map<String, BaseCommand<? extends BaseArgs>> commands, String[] args)
 		throws Exception {
 
@@ -171,65 +140,72 @@ public class Extensions implements AutoCloseable {
 			if (flagsWithArgs.contains(s)) {
 				addLast.add(argsList.remove(x));
 				addLast.add(argsList.remove(x));
+				x--;
 			}
-			else if (flagsWithoutArgs.contains(s)) {
+		}
+
+		for (int x = 0; x < argsList.size(); x++) {
+			String s = argsList.get(x);
+
+			if (flagsWithoutArgs.contains(s)) {
 				addLast.add(argsList.remove(x));
 			}
-			else {
-				if (!spaceCommandSplitCollection.isEmpty()) {
-					String[] foundStrArray = null;
+		}
 
-					for (String[] strArray : spaceCommandSplitCollection) {
-						if (argsList.size() >= (x + strArray.length)) {
-							if (foundStrArray == null) {
-								boolean mismatch = false;
+		for (int x = 0; x < argsList.size(); x++) {
+			if (!spaceCommandSplitCollection.isEmpty()) {
+				String[] foundStrArray = null;
 
-								if (strArray.length == 0) {
-									mismatch = true;
+				for (String[] strArray : spaceCommandSplitCollection) {
+					if (argsList.size() >= (x + strArray.length)) {
+						if (foundStrArray == null) {
+							boolean mismatch = false;
+
+							if (strArray.length == 0) {
+								mismatch = true;
+							}
+
+							for (int y = 0; y < strArray.length; y++) {
+								if (Objects.equals(strArray[y], argsList.get(x + y))) {
+									continue;
 								}
 
-								for (int y = 0; y < strArray.length; y++) {
-									if (Objects.equals(strArray[y], argsList.get(x + y))) {
-										continue;
-									}
+								mismatch = true;
+							}
 
-									mismatch = true;
-								}
+							if (!mismatch) {
+								foundStrArray = strArray;
 
-								if (!mismatch) {
-									foundStrArray = strArray;
-
-									break;
-								}
+								break;
 							}
 						}
 					}
+				}
 
-					if (foundStrArray != null) {
-						Collection<String> commandParts = new ArrayList<>();
+				if (foundStrArray != null) {
+					Collection<String> commandParts = new ArrayList<>();
 
-						for (int y = 0; y < foundStrArray.length; y++) {
-							if (Objects.equals(foundStrArray[y], argsList.get(x + y))) {
-								commandParts.add(foundStrArray[y]);
-							}
+					for (int y = 0; y < foundStrArray.length; y++) {
+						if (Objects.equals(foundStrArray[y], argsList.get(x + y))) {
+							commandParts.add(foundStrArray[y]);
 						}
-
-						StringBuilder newCommand = new StringBuilder();
-
-						for (String commandPart : commandParts) {
-							if (Objects.equals(commandPart, argsList.get(x))) {
-								int len = newCommand.length();
-
-								if (len > 0) {
-									newCommand.append(" ");
-								}
-
-								newCommand.append(argsList.remove(x));
-							}
-						}
-
-						argsList.add(x, newCommand.toString());
 					}
+
+					StringBuilder newCommand = new StringBuilder();
+
+					for (String commandPart : commandParts) {
+						if (Objects.equals(commandPart, argsList.get(x))) {
+							int len = newCommand.length();
+
+							if (len > 0) {
+								newCommand.append(" ");
+							}
+
+							newCommand.append(argsList.remove(x));
+						}
+					}
+
+					argsList.add(x, newCommand.toString());
 				}
 			}
 		}
@@ -239,8 +215,9 @@ public class Extensions implements AutoCloseable {
 		return argsList.toArray(new String[0]);
 	}
 
-	public Extensions(BladeSettings bladeSettings) {
+	public Extensions(BladeSettings bladeSettings, Path extensionsPath) {
 		_bladeSettings = bladeSettings;
+		_extensionsPath = extensionsPath;
 	}
 
 	@Override
@@ -254,6 +231,10 @@ public class Extensions implements AutoCloseable {
 		String profileName = _bladeSettings.getProfileName();
 
 		return _getCommands(profileName);
+	}
+
+	public Path getPath() throws IOException {
+		return _extensionsPath;
 	}
 
 	private static Collection<String> _getFlags(Class<? extends BaseArgs> clazz, boolean withArguments) {
@@ -324,7 +305,7 @@ public class Extensions implements AutoCloseable {
 
 		if (parameters == null) {
 			throw new IllegalArgumentException(
-				"Loaded base command class that doesn't have a Parameters annotation " + argsClass.getName());
+				"Loaded base command class that does not have a Parameters annotation " + argsClass.getName());
 		}
 
 		String[] commandNames = parameters.commandNames();
@@ -387,7 +368,7 @@ public class Extensions implements AutoCloseable {
 		if (_serviceLoaderClassLoader == null) {
 			Path tempExtensionsDirectory = Files.createTempDirectory("extensions");
 
-			FileUtil.copyDir(getDirectory(), tempExtensionsDirectory);
+			FileUtil.copyDir(getPath(), tempExtensionsDirectory);
 
 			URL[] jarUrls = _getJarUrls(tempExtensionsDirectory);
 
@@ -399,6 +380,7 @@ public class Extensions implements AutoCloseable {
 
 	private final BladeSettings _bladeSettings;
 	private Map<String, BaseCommand<? extends BaseArgs>> _commands;
+	private final Path _extensionsPath;
 	private URLClassLoader _serviceLoaderClassLoader = null;
 
 }

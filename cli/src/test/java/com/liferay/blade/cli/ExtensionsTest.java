@@ -36,31 +36,26 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.rule.PowerMockRule;
-import org.powermock.reflect.Whitebox;
 
 /**
  * @author Christopher Bryan Boyd
  * @author Gregory Amerson
  */
-@PrepareForTest(Extensions.class)
 public class ExtensionsTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Whitebox.setInternalState(BladeCLI.class, "USER_HOME_DIR", temporaryFolder.getRoot());
+		_bladeTest = new BladeTest(temporaryFolder.getRoot());
 	}
 
 	@Test
 	public void testArgsSort() throws Exception {
 		String[] args = {"--base", "/foo/bar/dir/", "--flag1", "extension", "install", "/path/to/jar.jar", "--flag2"};
 
-		BladeTest bladeTest = new BladeTest();
-
 		Map<String, BaseCommand<? extends BaseArgs>> commands;
 
-		try (Extensions extensions = new Extensions(bladeTest.getSettings())) {
+		try (Extensions extensions = new Extensions(_bladeTest.getBladeSettings(), _bladeTest.getExtensionsPath())) {
 			commands = extensions.getCommands();
 		}
 
@@ -79,31 +74,64 @@ public class ExtensionsTest {
 
 	@Test
 	public void testLoadCommandsBuiltIn() throws Exception {
-		BladeTest bladeTest = new BladeTest();
+		try (Extensions extensions = new Extensions(_bladeTest.getBladeSettings(), _bladeTest.getExtensionsPath())) {
+			Map<String, BaseCommand<? extends BaseArgs>> commands = extensions.getCommands();
 
-		Map<String, BaseCommand<? extends BaseArgs>> commands = new Extensions(bladeTest.getSettings()).getCommands();
+			Assert.assertNotNull(commands);
 
-		Assert.assertNotNull(commands);
-
-		Assert.assertEquals(commands.toString(), _NUM_BUILTIN_COMMANDS, commands.size());
+			Assert.assertEquals(commands.toString(), _NUM_BUILTIN_COMMANDS, commands.size());
+		}
 	}
 
 	@Test
 	public void testLoadCommandsWithCustomExtension() throws Exception {
 		_setupTestExtensions();
 
+		try (Extensions extensions = new Extensions(_bladeTest.getBladeSettings(), _bladeTest.getExtensionsPath())) {
+			Map<String, BaseCommand<? extends BaseArgs>> commands = extensions.getCommands();
+
+			Assert.assertNotNull(commands);
+
+			Assert.assertEquals(commands.toString(), _NUM_BUILTIN_COMMANDS + 2, commands.size());
+		}
+	}
+
+	@Test
+	public void testProfileExtension() throws Exception {
+		_setupTestExtensions();
+
+		File workspaceDir = temporaryFolder.newFolder("build", "test", "workspace");
+
+		BladeSettings bladeSettings = _bladeTest.getBladeSettings();
+
+		bladeSettings.setProfileName("foo");
+
+		String[] args = {"--base", workspaceDir.getPath(), "init", "-b", "foo"};
+
 		BladeTest bladeTest = new BladeTest();
 
-		Map<String, BaseCommand<? extends BaseArgs>> commands = new Extensions(bladeTest.getSettings()).getCommands();
+		bladeTest.run(args);
 
-		Assert.assertNotNull(commands);
+		args = new String[] {"--base", workspaceDir.getPath(), "foo", "bar"};
 
-		Assert.assertEquals(commands.toString(), _NUM_BUILTIN_COMMANDS + 1, commands.size());
+		BladeTestResults results = TestUtil.runBlade(temporaryFolder.getRoot(), args);
+
+		String output = results.getOutput();
+
+		Assert.assertTrue(output, output.contains("NewCommand"));
+
+		args = new String[] {"--base", workspaceDir.getPath(), "deploy", "--watch"};
+
+		results = TestUtil.runBlade(temporaryFolder.getRoot(), args);
+
+		output = results.getOutput();
+
+		Assert.assertTrue(output, output.contains("OverriddenCommand says true"));
 	}
 
 	@Test
 	public void testProjectTemplatesBuiltIn() throws Exception {
-		Map<String, String> templates = BladeUtil.getTemplates();
+		Map<String, String> templates = BladeUtil.getTemplates(_bladeTest);
 
 		Assert.assertNotNull(templates);
 
@@ -114,7 +142,7 @@ public class ExtensionsTest {
 	public void testProjectTemplatesWithCustom() throws Exception {
 		_setupTestExtensions();
 
-		Map<String, String> templates = BladeUtil.getTemplates();
+		Map<String, String> templates = BladeUtil.getTemplates(_bladeTest);
 
 		Assert.assertNotNull(templates);
 
@@ -139,18 +167,6 @@ public class ExtensionsTest {
 		Assert.assertTrue(Files.exists(sampleJarPath));
 	}
 
-	private static void _setupTestTemplate(Path extensionsPath, String jarPath) throws IOException {
-		File sampleJarFile = new File(jarPath);
-
-		Assert.assertTrue(sampleJarFile.getAbsolutePath() + " does not exist.", sampleJarFile.exists());
-
-		Path sampleJarPath = extensionsPath.resolve(sampleJarFile.getName());
-
-		Files.copy(sampleJarFile.toPath(), sampleJarPath, StandardCopyOption.REPLACE_EXISTING);
-
-		Assert.assertTrue(Files.exists(sampleJarPath));
-	}
-
 	private void _setupTestExtensions() throws Exception {
 		File extensionsDir = new File(temporaryFolder.getRoot(), ".blade/extensions");
 
@@ -161,11 +177,14 @@ public class ExtensionsTest {
 		Path extensionsPath = extensionsDir.toPath();
 
 		_setupTestExtension(extensionsPath, System.getProperty("sampleCommandJarFile"));
-		_setupTestTemplate(extensionsPath, System.getProperty("sampleTemplateJarFile"));
+		_setupTestExtension(extensionsPath, System.getProperty("sampleProfileJarFile"));
+		_setupTestExtension(extensionsPath, System.getProperty("sampleTemplateJarFile"));
 	}
 
 	private static final int _NUM_BUILTIN_COMMANDS = 17;
 
 	private static final int _NUM_BUILTIN_TEMPLATES = 37;
+
+	private BladeTest _bladeTest;
 
 }

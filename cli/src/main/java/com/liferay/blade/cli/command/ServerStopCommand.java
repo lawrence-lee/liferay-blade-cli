@@ -19,6 +19,8 @@ package com.liferay.blade.cli.command;
 import com.liferay.blade.cli.BladeCLI;
 import com.liferay.blade.cli.WorkspaceConstants;
 import com.liferay.blade.cli.util.BladeUtil;
+import com.liferay.blade.cli.util.ServerUtil;
+import com.liferay.blade.cli.util.WorkspaceUtil;
 
 import java.io.File;
 
@@ -27,11 +29,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author David Truong
@@ -43,20 +44,47 @@ public class ServerStopCommand extends BaseCommand<ServerStopArgs> {
 
 	@Override
 	public void execute() throws Exception {
-		File gradleWrapperFile = BladeUtil.getGradleWrapper(_blade.getBase());
+		BladeCLI bladeCLI = getBladeCLI();
 
-		Path gradleWrapperPath = gradleWrapperFile.toPath();
+		BaseArgs args = bladeCLI.getBladeArgs();
 
-		Path parent = gradleWrapperPath.getParent();
+		File baseDir = new File(args.getBase());
 
-		File rootDir = parent.toFile();
+		File gradleWrapperFile = BladeUtil.getGradleWrapper(baseDir);
+
+		File rootDir = null;
+
+		Path rootDirPath = null;
 
 		String serverType = null;
 
-		Path rootDirPath = rootDir.toPath();
+		if (gradleWrapperFile != null) {
+			Path gradleWrapperPath = gradleWrapperFile.toPath();
 
-		if (BladeUtil.isWorkspace(rootDir)) {
-			Properties properties = BladeUtil.getGradleProperties(rootDir);
+			Path parent = gradleWrapperPath.getParent();
+
+			rootDir = parent.toFile();
+
+			rootDirPath = rootDir.toPath();
+		}
+		else {
+			rootDir = baseDir;
+
+			rootDirPath = rootDir.toPath();
+
+			Optional<Path> serverPath = BladeUtil.getServerPathByType(rootDirPath, _SERVER_TYPES);
+
+			if (serverPath.isPresent()) {
+				rootDirPath = serverPath.get();
+
+				rootDirPath = rootDirPath.getParent();
+
+				rootDir = rootDirPath.toFile();
+			}
+		}
+
+		if (WorkspaceUtil.isWorkspace(rootDir)) {
+			Properties properties = WorkspaceUtil.getGradleProperties(rootDir);
 
 			String liferayHomePath = properties.getProperty(WorkspaceConstants.DEFAULT_LIFERAY_HOME_DIR_PROPERTY);
 
@@ -96,17 +124,25 @@ public class ServerStopCommand extends BaseCommand<ServerStopArgs> {
 		}
 		else {
 			try {
-				List<Properties> propertiesList = BladeUtil.getAppServerProperties(rootDir);
+				Map<File, Properties> propertiesList = BladeUtil.getAppServerPropertiesMap(rootDir);
 
 				String appServerParentDir = "";
 
-				for (Properties properties : propertiesList) {
+				for (Entry<File, Properties> propertiesEntry : propertiesList.entrySet()) {
+					File propertiesFile = propertiesEntry.getKey();
+
+					Properties properties = propertiesEntry.getValue();
+
 					if (appServerParentDir.equals("")) {
 						String appServerParentDirTemp = properties.getProperty(
 							BladeUtil.APP_SERVER_PARENT_DIR_PROPERTY);
 
 						if ((appServerParentDirTemp != null) && !appServerParentDirTemp.equals("")) {
-							Path rootDirRealPath = rootDirPath.toRealPath();
+							Path rootDirRealPath = propertiesFile.toPath();
+
+							rootDirRealPath = rootDirRealPath.normalize();
+
+							rootDirRealPath = rootDirRealPath.getParent();
 
 							appServerParentDirTemp = appServerParentDirTemp.replace(
 								"${project.dir}", rootDirRealPath.toString());
@@ -132,7 +168,7 @@ public class ServerStopCommand extends BaseCommand<ServerStopArgs> {
 				}
 			}
 			catch (Exception e) {
-				_blade.error("Please execute this command from a Liferay project");
+				bladeCLI.error("Please execute this command from a Liferay project");
 			}
 		}
 	}
@@ -143,38 +179,42 @@ public class ServerStopCommand extends BaseCommand<ServerStopArgs> {
 	}
 
 	private void _commandServer(Path dir, String serverType) throws Exception {
-		try (Stream<Path> list = Files.list(dir)) {
-			if (Files.notExists(dir) || !list.findAny().isPresent()) {
-				_blade.error(
-					" bundles folder does not exist in Liferay Workspace, execute 'gradlew initBundle' in order to " +
-						"create it.");
+		BladeCLI bladeCLI = getBladeCLI();
 
-				return;
+		if (Files.notExists(dir) || BladeUtil.isDirEmpty(dir)) {
+			bladeCLI.error(
+				" bundles folder does not exist in Liferay Workspace, execute 'gradlew initBundle' in order to " +
+					"create it.");
+
+			return;
+		}
+
+		Optional<Path> server = ServerUtil.findServerFolder(dir, serverType);
+
+		boolean success = false;
+
+		if (server.isPresent()) {
+			Path file = server.get();
+
+			if (serverType.equals("tomcat")) {
+				_commmandTomcat(file);
+
+				success = true;
 			}
-
-			for (Path file : list.collect(Collectors.toList())) {
-				Path fileName = file.getFileName();
-
-				if (fileName.startsWith(serverType) && Files.isDirectory(file)) {
-					if (serverType.equals("tomcat")) {
-						_commmandTomcat(file);
-
-						return;
-					}
-					else if (serverType.equals("jboss") || serverType.equals("wildfly")) {
-						_commmandJBossWildfly();
-
-						return;
-					}
-				}
+			else if (serverType.equals("jboss") || serverType.equals("wildfly")) {
+				_commmandJBossWildfly();
 			}
+		}
 
-			_blade.error(serverType + " not supported");
+		if (!success) {
+			bladeCLI.error(serverType + " not supported");
 		}
 	}
 
 	private void _commmandJBossWildfly() throws Exception {
-		_blade.error("JBoss/Wildfly supports start command and debug flag");
+		BladeCLI bladeCLI = getBladeCLI();
+
+		bladeCLI.error("JBoss/Wildfly supports start command and debug flag");
 	}
 
 	private void _commmandTomcat(Path dir) throws Exception {
@@ -182,19 +222,15 @@ public class ServerStopCommand extends BaseCommand<ServerStopArgs> {
 
 		enviroment.put("CATALINA_PID", "catalina.pid");
 
-		String executable = "./catalina.sh";
-
-		if (BladeUtil.isWindows()) {
-			executable = "catalina.bat";
-		}
+		String executable = ServerUtil.getTomcatExecutable();
 
 		Path binPath = dir.resolve("bin");
 
-		Process process = BladeUtil.startProcess(_blade, executable + " stop 60 -force", binPath.toFile(), enviroment);
+		Process process = BladeUtil.startProcess(executable + " stop 60 -force", binPath.toFile(), enviroment);
 
 		process.waitFor();
 	}
 
-	private BladeCLI _blade;
+	private static final String[] _SERVER_TYPES = {"jboss", "tomcat", "wildfly"};
 
 }

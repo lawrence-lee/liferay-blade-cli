@@ -1,31 +1,50 @@
 # Liferay Blade CLI Change Log
 
-## 3.1.1 - Unreleased -
+## 3.1.2 - 2018-08-30 - ba8e7d64a866b4fbef383be37522d0eaf3bc8b4f
 
-- [BLADE-211] : Add Changelog using changelog plugin
+- [BLADE-256]: As a developer, i'd like tests to run in parallel
+- [BLADE-265]: Print Gradle Errors in Test Results
+- [BLADE-270]: blade init will fails if run in the empty folder
+- [BLADE-271]: blade server start for finding the right server to start
+- [BLADE-274]: blade deploy does not start wars on reinstall
+- [BLADE-276]: blade init . doesn't create a workspace
+- [BLADE-277]: `blade server stop` not recognizing folder names correctly
+- [BLADE-280]: update to project templates 4.1.5
+- [BLADE-281]: Creating project templates in workspace that has TP enabled should use TP enabled version of project template
+- [BLADE-284]: update to project templates 4.1.6
+
+## 3.1.1 - 2018-07-18 - 5d9faab454e1023e3fbe8502365f752c26fcc7c9
+
+- [BLADE-211]: Add Changelog using changelog plugin
+- [BLADE-253]: Specify blade version in build config
+- [BLADE-257]: Correct server start command
+- [BLADE-258]: Always alert users of deployment errors
+- [BLADE-259]: Fix NPE in server stop command
+- [BLADE-260]: Fix exception in server stop command
+- [BLADE-262]: Update to project template 4.1.1 artifact
+- [BLADE-264]: Update default version to 7.1
 
 ## 3.1.0 - 2018-07-05 - 570a5b7ae626ee0e7bf8751656104c5e33f8512b
 
-- [BLADE-214] : Create a `blade-extension` blade sample project, demonstrating how blade may be extended with custom commands
-- [BLADE-231] : Blade Custom Project Template Support
-- [BLADE-244] : As a developer, I would like my tomcat logs to be colorized
-- [BLADE-246] : create project from service template doesn't show that -s <service> is required
-- [BLADE-250] : extension install fails if you install same extension twice
-- [BLADE-251] : `blade gw` sometimes has trouble finding gradlew
+- [BLADE-214]: Create a `blade-extension` blade sample project, demonstrating how blade may be extended with custom commands
+- [BLADE-231]: Blade Custom Project Template Support
+- [BLADE-244]: As a developer, I would like my tomcat logs to be colorized
+- [BLADE-246]: create project from service template doesn't show that -s <service> is required
+- [BLADE-250]: extension install fails if you install same extension twice
+- [BLADE-251]: `blade gw` sometimes has trouble finding gradlew
 
 Updated to use Project Templates 4.1.0
- - [IDE-4081] : Blade's MVC Portlet template doesn't generate javax.portlet.title Language key properly
-
- - [LPS-78045] : Remove exported package from portal-portlet-bridge-soy
- - [LPS-79301] : Project Templates: Remove build.gradle if build type is maven, pom.xml if gradle
- - [LPS-79417] : Blade template to create a social bookmark module
- - [LPS-79495] : Store Liferay-Versions in MANIFEST.MF of Project Templates
- - [LPS-79496] : Change project templates velocity templates to check if Liferay Version starts with 7.0, 7.1, rather than checking whole string
- - [LPS-79653] : Portlet 3.0: Upgrade to the Portlet 3.0.0 API
- - [LPS-80284] : Update bndlib to 3.5.0
- - [LPS-80404] : As a developer, I would like to see stacktraces from the gradlerunner build
- - [LPS-80472] : Use local npm proxy in CI
- - [LPS-82590] : Move project templates off snapshots
+ - [IDE-4081]: Blade's MVC Portlet template doesn't generate javax.portlet.title Language key properly
+ - [LPS-78045]: Remove exported package from portal-portlet-bridge-soy
+ - [LPS-79301]: Project Templates: Remove build.gradle if build type is maven, pom.xml if gradle
+ - [LPS-79417]: Blade template to create a social bookmark module
+ - [LPS-79495]: Store Liferay-Versions in MANIFEST.MF of Project Templates
+ - [LPS-79496]: Change project templates velocity templates to check if Liferay Version starts with 7.0, 7.1, rather than checking whole string
+ - [LPS-79653]: Portlet 3.0: Upgrade to the Portlet 3.0.0 API
+ - [LPS-80284]: Update bndlib to 3.5.0
+ - [LPS-80404]: As a developer, I would like to see stacktraces from the gradlerunner build
+ - [LPS-80472]: Use local npm proxy in CI
+ - [LPS-82590]: Move project templates off snapshots
 
 ## 3.0.0 - 2018-03-30 - 52ac672f21e8503f4371b6dbc403a9527582eff4
 
@@ -39,9 +58,10 @@ Updated to use Project Templates 4.1.0
 ### Changed
 - [BLADE-202]: Update Blade CLI to use JCommander
 - [BLADE-207]: Upgrade all Blade Samples to set up logging
+- [BLADE-214]: Removed install command `blade install ...` and shell command should be used instead `blade sh install ...`
 - [BLADE-226]: Print warning and usage info when `blade create -t fragment` is invoked without -H and -h flags
 - [BLADE-230]: `blade create` `-t` argument should be mandatory
-- [BLADE-214]: Removed install command `blade install ...` and shell command should be used instead `blade sh install ...`
+
 
 ### Fixed
 - [BLADE-193]: Deploy Command does not properly handle bundle states
@@ -75,6 +95,7 @@ Updated to use Project Templates 4.1.0
 - [LPS-74994]: Added NPM Project Templates
 - [LPS-75587]: Use latest Project Template Archetypes
 
+
 [BLADE-190]: https://issues.liferay.com/browse/BLADE-190
 [BLADE-193]: https://issues.liferay.com/browse/BLADE-193
 [BLADE-199]: https://issues.liferay.com/browse/BLADE-199
@@ -86,7 +107,10 @@ Updated to use Project Templates 4.1.0
 [BLADE-209]: https://issues.liferay.com/browse/BLADE-209
 [BLADE-210]: https://issues.liferay.com/browse/BLADE-210
 [BLADE-211]: https://issues.liferay.com/browse/BLADE-211
+[BLADE-211]: https://issues.liferay.com/browse/BLADE-211
 [BLADE-212]: https://issues.liferay.com/browse/BLADE-212
+[BLADE-214]: https://issues.liferay.com/browse/BLADE-214
+[BLADE-214]: https://issues.liferay.com/browse/BLADE-214
 [BLADE-216]: https://issues.liferay.com/browse/BLADE-216
 [BLADE-218]: https://issues.liferay.com/browse/BLADE-218
 [BLADE-219]: https://issues.liferay.com/browse/BLADE-219
@@ -94,12 +118,46 @@ Updated to use Project Templates 4.1.0
 [BLADE-227]: https://issues.liferay.com/browse/BLADE-227
 [BLADE-228]: https://issues.liferay.com/browse/BLADE-228
 [BLADE-230]: https://issues.liferay.com/browse/BLADE-230
+[BLADE-231]: https://issues.liferay.com/browse/BLADE-231
+[BLADE-233]: https://issues.liferay.com/browse/BLADE-233
+[BLADE-244]: https://issues.liferay.com/browse/BLADE-244
+[BLADE-246]: https://issues.liferay.com/browse/BLADE-246
+[BLADE-250]: https://issues.liferay.com/browse/BLADE-250
+[BLADE-251]: https://issues.liferay.com/browse/BLADE-251
+[BLADE-253]: https://issues.liferay.com/browse/BLADE-253
+[BLADE-256]: https://issues.liferay.com/browse/BLADE-256
+[BLADE-257]: https://issues.liferay.com/browse/BLADE-257
+[BLADE-258]: https://issues.liferay.com/browse/BLADE-258
+[BLADE-259]: https://issues.liferay.com/browse/BLADE-259
+[BLADE-260]: https://issues.liferay.com/browse/BLADE-260
+[BLADE-262]: https://issues.liferay.com/browse/BLADE-262
+[BLADE-264]: https://issues.liferay.com/browse/BLADE-264
+[BLADE-265]: https://issues.liferay.com/browse/BLADE-265
+[BLADE-270]: https://issues.liferay.com/browse/BLADE-270
+[BLADE-271]: https://issues.liferay.com/browse/BLADE-271
+[BLADE-274]: https://issues.liferay.com/browse/BLADE-274
+[BLADE-276]: https://issues.liferay.com/browse/BLADE-276
+[BLADE-277]: https://issues.liferay.com/browse/BLADE-277
+[BLADE-280]: https://issues.liferay.com/browse/BLADE-280
+[BLADE-281]: https://issues.liferay.com/browse/BLADE-281
+[BLADE-284]: https://issues.liferay.com/browse/BLADE-284
+[IDE-4081]: https://issues.liferay.com/browse/IDE-4081
 [LPS-73746]: https://issues.liferay.com/browse/LPS-73746
 [LPS-73913]: https://issues.liferay.com/browse/LPS-73913
 [LPS-74124]: https://issues.liferay.com/browse/LPS-74124
 [LPS-74818]: https://issues.liferay.com/browse/LPS-74818
-[Updated Liferay Gradle Plugin]: https://github.com/liferay/liferay-portal/blob/master/modules/sdk/gradle-plugins/CHANGELOG.markdown#3523---2017-10-26
 [LPS-74994]: https://issues.liferay.com/browse/LPS-74994
 [LPS-75479]: https://issues.liferay.com/browse/LPS-75479
 [LPS-75587]: https://issues.liferay.com/browse/LPS-75587
 [LPS-75805]: https://issues.liferay.com/browse/LPS-75805
+[LPS-78045]: https://issues.liferay.com/browse/LPS-78045
+[LPS-79301]: https://issues.liferay.com/browse/LPS-79301
+[LPS-79417]: https://issues.liferay.com/browse/LPS-79417
+[LPS-79495]: https://issues.liferay.com/browse/LPS-79495
+[LPS-79496]: https://issues.liferay.com/browse/LPS-79496
+[LPS-79653]: https://issues.liferay.com/browse/LPS-79653
+[LPS-80284]: https://issues.liferay.com/browse/LPS-80284
+[LPS-80404]: https://issues.liferay.com/browse/LPS-80404
+[LPS-80472]: https://issues.liferay.com/browse/LPS-80472
+[LPS-82590]: https://issues.liferay.com/browse/LPS-82590
+[Updated Liferay Gradle Plugin]: https://github.com/liferay/liferay-portal/blob/master/modules/sdk/gradle-plugins/CHANGELOG.markdown#3523---2017-10-26

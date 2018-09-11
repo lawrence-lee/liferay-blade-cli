@@ -40,6 +40,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -56,11 +57,25 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		InitArgs initArgs = getArgs();
 		BladeCLI bladeCLI = getBladeCLI();
 
+		BaseArgs args = bladeCLI.getBladeArgs();
+
 		String name = initArgs.getName();
 
 		String build = initArgs.getBuild();
 
-		File destDir = name != null ? new File(bladeCLI.getBase(), name) : bladeCLI.getBase();
+		File baseDir = new File(args.getBase());
+
+		final File destDir;
+
+		Path correctPath = baseDir.toPath();
+
+		if (Objects.nonNull(name)) {
+			correctPath = correctPath.resolve(name);
+		}
+
+		correctPath = correctPath.normalize();
+
+		destDir = correctPath.toFile();
 
 		File temp = null;
 
@@ -136,9 +151,13 @@ public class InitCommand extends BaseCommand<InitArgs> {
 
 		ProjectTemplatesArgs projectTemplatesArgs = new ProjectTemplatesArgs();
 
-		if (name == null) {
+		if ((name == null) || Objects.equals(name, ".")) {
 			name = destDir.getName();
 		}
+
+		Path destPath = destDir.toPath();
+
+		destPath = destPath.normalize();
 
 		File destParentDir = destDir.getParentFile();
 
@@ -185,9 +204,9 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		}
 
 		if ((build != null) && !build.equals("gradle")) {
-			getBladeCLI().setBase(destDir);
+			args.setBase(destDir);
 
-			BladeSettings settings = getBladeCLI().getSettings();
+			BladeSettings settings = bladeCLI.getBladeSettings();
 
 			settings.setProfileName(build);
 

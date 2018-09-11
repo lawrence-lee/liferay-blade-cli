@@ -17,9 +17,9 @@
 package com.liferay.blade.cli.command;
 
 import com.liferay.blade.cli.BladeCLI;
-import com.liferay.blade.cli.Extensions;
 import com.liferay.blade.cli.WorkspaceConstants;
 import com.liferay.blade.cli.util.BladeUtil;
+import com.liferay.blade.cli.util.WorkspaceUtil;
 import com.liferay.project.templates.ProjectTemplates;
 import com.liferay.project.templates.ProjectTemplatesArgs;
 import com.liferay.project.templates.internal.util.FileUtil;
@@ -162,6 +162,7 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 		projectTemplatesArgs.setClassName(createArgs.getClassname());
 		projectTemplatesArgs.setContributorType(createArgs.getContributorType());
 		projectTemplatesArgs.setDestinationDir(dir.getAbsoluteFile());
+		projectTemplatesArgs.setDependencyManagementEnabled(WorkspaceUtil.isDependencyManagementEnabled(dir));
 		projectTemplatesArgs.setHostBundleSymbolicName(createArgs.getHostBundleBSN());
 		projectTemplatesArgs.setHostBundleVersion(createArgs.getHostBundleVersion());
 		projectTemplatesArgs.setLiferayVersion(createArgs.getLiferayVersion());
@@ -172,7 +173,7 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 
 		List<File> archetypesDirs = projectTemplatesArgs.getArchetypesDirs();
 
-		Path customTemplatesPath = Extensions.getDirectory();
+		Path customTemplatesPath = bladeCLI.getExtensionsPath();
 
 		archetypesDirs.add(FileUtil.getJarFile(ProjectTemplates.class));
 		archetypesDirs.add(customTemplatesPath.toFile());
@@ -237,15 +238,17 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 	private File _getDefaultModulesDir() throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		File base = bladeCLI.getBase();
+		BaseArgs args = bladeCLI.getBladeArgs();
 
-		File baseDir = base.getAbsoluteFile();
+		File base = new File(args.getBase());
 
-		if (!BladeUtil.isWorkspace(baseDir)) {
+		File baseDir = base.getCanonicalFile();
+
+		if (!WorkspaceUtil.isWorkspace(baseDir)) {
 			return baseDir;
 		}
 
-		Properties properties = BladeUtil.getGradleProperties(baseDir);
+		Properties properties = WorkspaceUtil.getGradleProperties(baseDir);
 
 		String modulesDirValue = (String)properties.get(WorkspaceConstants.DEFAULT_MODULES_DIR_PROPERTY);
 
@@ -253,7 +256,7 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 			modulesDirValue = WorkspaceConstants.DEFAULT_MODULES_DIR;
 		}
 
-		File projectDir = BladeUtil.getWorkspaceDir(bladeCLI);
+		File projectDir = WorkspaceUtil.getWorkspaceDir(bladeCLI);
 
 		File modulesDir = new File(projectDir, modulesDirValue);
 
@@ -267,15 +270,17 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 	private File _getDefaultWarsDir() throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		File base = bladeCLI.getBase();
+		BaseArgs args = bladeCLI.getBladeArgs();
 
-		File baseDir = base.getAbsoluteFile();
+		File base = new File(args.getBase());
 
-		if (!BladeUtil.isWorkspace(baseDir)) {
+		File baseDir = base.getCanonicalFile();
+
+		if (!WorkspaceUtil.isWorkspace(baseDir)) {
 			return baseDir;
 		}
 
-		Properties properties = BladeUtil.getGradleProperties(baseDir);
+		Properties properties = WorkspaceUtil.getGradleProperties(baseDir);
 
 		String warsDirValue = (String)properties.get(WorkspaceConstants.DEFAULT_WARS_DIR_PROPERTY);
 
@@ -287,7 +292,7 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 			warsDirValue = warsDirValue.split(",")[0];
 		}
 
-		File projectDir = BladeUtil.getWorkspaceDir(bladeCLI);
+		File projectDir = WorkspaceUtil.getWorkspaceDir(bladeCLI);
 
 		File warsDir = new File(projectDir, warsDirValue);
 
@@ -299,7 +304,7 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 	}
 
 	private boolean _isExistingTemplate(String templateName) throws Exception {
-		Collection<String> templateNames = BladeUtil.getTemplateNames();
+		Collection<String> templateNames = BladeUtil.getTemplateNames(getBladeCLI());
 
 		return templateNames.contains(templateName);
 	}
@@ -307,9 +312,9 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 	private void _printTemplates() throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		Map<String, String> templates = BladeUtil.getTemplates();
+		Map<String, String> templates = BladeUtil.getTemplates(bladeCLI);
 
-		List<String> templateNames = new ArrayList<>(BladeUtil.getTemplateNames());
+		List<String> templateNames = new ArrayList<>(BladeUtil.getTemplateNames(getBladeCLI()));
 
 		Collections.sort(templateNames);
 

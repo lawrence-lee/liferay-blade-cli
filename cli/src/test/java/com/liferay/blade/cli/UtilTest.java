@@ -20,13 +20,20 @@ import aQute.lib.io.IO;
 
 import com.liferay.blade.cli.util.BladeUtil;
 import com.liferay.blade.cli.util.FileUtil;
+import com.liferay.blade.cli.util.WorkspaceUtil;
 
 import java.io.File;
 
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -107,6 +114,27 @@ public class UtilTest {
 	}
 
 	@Test
+	public void testFindServerPathByType() throws Exception {
+		FileSystem defaultFileSystem = FileSystems.getDefault();
+
+		Iterator<Path> fileSystemRoots = defaultFileSystem.getRootDirectories().iterator();
+
+		Path rootPath = fileSystemRoots.next();
+
+		Path fakePath = rootPath.resolve(Paths.get("foo", "bar", "tomcat-9.0.10", "bin"));
+
+		Optional<Path> serverPath = BladeUtil.getServerPathByType(fakePath, "tomcat");
+
+		Assert.assertNotNull(serverPath);
+
+		Assert.assertTrue(serverPath.isPresent());
+
+		Path realTomcatDir = rootPath.resolve(Paths.get("foo", "bar", "tomcat-9.0.10"));
+
+		Assert.assertTrue(realTomcatDir.equals(serverPath.get()));
+	}
+
+	@Test
 	public void testIsWorkspace1() throws Exception {
 		File workspace = new File(temporaryFolder.getRoot(), "workspace");
 
@@ -118,7 +146,7 @@ public class UtilTest {
 
 		Files.write(gradleFile.toPath(), plugin.getBytes());
 
-		Assert.assertTrue(BladeUtil.isWorkspace(workspace));
+		Assert.assertTrue(WorkspaceUtil.isWorkspace(workspace));
 	}
 
 	@Test
@@ -133,7 +161,7 @@ public class UtilTest {
 
 		Files.write(gradleFile.toPath(), plugin.getBytes());
 
-		Assert.assertTrue(BladeUtil.isWorkspace(workspace));
+		Assert.assertTrue(WorkspaceUtil.isWorkspace(workspace));
 	}
 
 	@Test
@@ -152,7 +180,7 @@ public class UtilTest {
 
 		Files.write(buildFile.toPath(), plugin.getBytes());
 
-		Assert.assertTrue(BladeUtil.isWorkspace(workspace));
+		Assert.assertTrue(WorkspaceUtil.isWorkspace(workspace));
 	}
 
 	@Rule
