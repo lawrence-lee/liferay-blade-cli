@@ -35,25 +35,34 @@ public class GradleExecTest {
 
 	@Test
 	public void testGradleWrapper() throws Exception {
-		File file = temporaryFolder.getRoot();
+		File temporaryDir = temporaryFolder.getRoot();
 
-		String[] args = {"create", "-t", "api", "foo"};
+		String[] args = {"--base", temporaryDir.getAbsolutePath(), "create", "-t", "api", "foo"};
 
-		new BladeTest(file).run(args);
+		new BladeTest().run(args);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		PrintStream ps = new PrintStream(baos);
 
-		BladeCLI blade = new BladeTest(ps, new File(file, "foo"));
+		BladeCLI blade = new BladeTest(ps);
 
 		GradleExec gradleExec = new GradleExec(blade);
 
-		ProcessResult result = gradleExec.executeGradleCommand("tasks");
+		ProcessResult result = gradleExec.executeTask("tasks");
 
-		int errorCode = result.getResultCode();
+		int resultCode = result.getResultCode();
 
-		Assert.assertEquals(0, errorCode);
+		String output = result.get();
+
+		if (resultCode > 0) {
+			Assert.assertEquals(
+				"Gradle command returned error code " + resultCode + System.lineSeparator() + output, 0, resultCode);
+		}
+		else {
+			Assert.assertFalse(
+				"Gradle build failed " + System.lineSeparator() + output, output.contains("BUILD FAILED"));
+		}
 	}
 
 	@Rule

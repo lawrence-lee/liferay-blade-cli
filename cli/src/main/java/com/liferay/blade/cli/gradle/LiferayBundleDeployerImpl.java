@@ -31,6 +31,7 @@ import java.nio.file.Paths;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,6 +56,28 @@ public class LiferayBundleDeployerImpl implements LiferayBundleDeployer {
 		if (_client != null) {
 			_client.close();
 		}
+	}
+
+	@Override
+	public BundleDTO getBundle(long id) throws Exception {
+		String response = _client.send("lb -s -u | grep '" + id + "\\|'");
+
+		String[] lines = _parseGogoResponse(response);
+
+		return Stream.of(
+			lines
+		).skip(
+			1
+		).limit(
+			1
+		).map(
+			LiferayBundleDeployerImpl::_parseGogoLine
+		).filter(
+			x -> x.id == id
+		).findAny(
+		).orElseThrow(
+			() -> new NoSuchElementException("No bundle matching the specified ID " + id)
+		);
 	}
 
 	@Override
@@ -116,9 +139,7 @@ public class LiferayBundleDeployerImpl implements LiferayBundleDeployer {
 
 	@Override
 	public void refresh(long id) throws Exception {
-		String output = _sendGogo(String.format("refresh %s", id));
-
-		System.out.println(output);
+		_sendGogo(String.format("refresh %s", id));
 	}
 
 	@Override
@@ -132,16 +153,28 @@ public class LiferayBundleDeployerImpl implements LiferayBundleDeployer {
 
 	@Override
 	public void stop(long id) throws Exception {
-		String output = _sendGogo(String.format("stop %s", id));
+		_sendGogo(String.format("stop %s", id));
+	}
 
-		System.out.println(output);
+	@Override
+	public void uninstall(long id) throws Exception {
+		_sendGogo(String.format("uninstall %s", id));
 	}
 
 	@Override
 	public void update(long id, URI uri) throws Exception {
-		String output = _sendGogo(String.format("update %s %s", id, uri.toASCIIString()));
+		final String installString;
 
-		System.out.println(output);
+		Path uriPath = Paths.get(uri);
+
+		if (_WAR_FILE_GLOB.matches(uriPath)) {
+			installString = "update " + _getWarString(uriPath);
+		}
+		else {
+			installString = _sendGogo(String.format("update %s %s", id, uri.toASCIIString()));
+		}
+
+		_sendGogo(installString);
 	}
 
 	private static List<BundleDTO> _getBundles(GogoShellClient client) throws IOException {
@@ -202,7 +235,7 @@ public class LiferayBundleDeployerImpl implements LiferayBundleDeployer {
 
 		URI uri = path.toUri();
 
-		return String.format(_WAR_STRING_TEMPLATE, uri.toASCIIString(), fileNameString);
+		return String.format(_WAR_STRING_TEMPLATE, uri.toASCIIString(), fileNameString, fileNameString);
 	}
 
 	private static final BundleDTO _newBundleDTO(Long id, int state, String symbolicName) {
@@ -282,7 +315,7 @@ public class LiferayBundleDeployerImpl implements LiferayBundleDeployer {
 
 	private static final PathMatcher _WAR_FILE_GLOB = _FILE_SYSTEM.getPathMatcher("glob:**.war");
 
-	private static final String _WAR_STRING_TEMPLATE = "webbundle:%s?Web-ContextPath=/%s";
+	private static final String _WAR_STRING_TEMPLATE = "webbundle:%s?Bundle-SymbolicName=%s&Web-ContextPath=/%s";
 
 	private static final Pattern _installResponse = Pattern.compile(
 		".*Bundle ID: (.*$).*", Pattern.DOTALL | Pattern.MULTILINE);

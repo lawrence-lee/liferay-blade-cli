@@ -18,8 +18,8 @@ package com.liferay.blade.cli.command;
 
 import com.liferay.blade.cli.BladeCLI;
 import com.liferay.blade.cli.WorkspaceConstants;
-import com.liferay.blade.cli.util.BladeUtil;
 import com.liferay.blade.cli.util.Constants;
+import com.liferay.blade.cli.util.WorkspaceUtil;
 import com.liferay.project.templates.ProjectTemplatesArgs;
 
 import java.io.File;
@@ -50,9 +50,9 @@ public class ConvertServiceBuilderCommand {
 		_blade = blade;
 		_args = options;
 
-		File projectDir = BladeUtil.getWorkspaceDir(_blade);
+		File projectDir = WorkspaceUtil.getWorkspaceDir(_blade);
 
-		Properties gradleProperties = BladeUtil.getGradleProperties(projectDir);
+		Properties gradleProperties = WorkspaceUtil.getGradleProperties(projectDir);
 
 		String warsDirPath = null;
 
@@ -84,7 +84,7 @@ public class ConvertServiceBuilderCommand {
 
 		final String projectName = name.isEmpty() ? null : name.get(0);
 
-		if (!BladeUtil.isWorkspace(_blade)) {
+		if (!WorkspaceUtil.isWorkspace(_blade)) {
 			_blade.error("Please execute command in a Liferay Workspace project");
 
 			return;
@@ -99,7 +99,7 @@ public class ConvertServiceBuilderCommand {
 		File project = new File(_warsDir, projectName);
 
 		if (!project.exists()) {
-			_blade.error("The project " + projectName + " doesn't exist in " + _warsDir.getPath());
+			_blade.error("The project " + projectName + " does not exist in " + _warsDir.getPath());
 
 			return;
 		}

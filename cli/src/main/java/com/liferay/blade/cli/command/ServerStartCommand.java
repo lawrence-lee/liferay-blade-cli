@@ -19,6 +19,8 @@ package com.liferay.blade.cli.command;
 import com.liferay.blade.cli.BladeCLI;
 import com.liferay.blade.cli.WorkspaceConstants;
 import com.liferay.blade.cli.util.BladeUtil;
+import com.liferay.blade.cli.util.ServerUtil;
+import com.liferay.blade.cli.util.WorkspaceUtil;
 
 import java.io.File;
 
@@ -26,15 +28,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Stream;
 
 /**
  * @author David Truong
+ * @author Simon Jiang
  */
 public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 
@@ -43,9 +47,13 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 
 	@Override
 	public void execute() throws Exception {
-		BladeCLI blade = getBladeCLI();
+		BladeCLI bladeCLI = getBladeCLI();
 
-		File gradleWrapperFile = BladeUtil.getGradleWrapper(blade.getBase());
+		BaseArgs baseArgs = bladeCLI.getBladeArgs();
+
+		File baseDir = new File(baseArgs.getBase());
+
+		File gradleWrapperFile = BladeUtil.getGradleWrapper(baseDir);
 
 		Path gradleWrapperPath = gradleWrapperFile.toPath();
 
@@ -57,8 +65,8 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 
 		Path rootDirPath = rootDir.toPath();
 
-		if (BladeUtil.isWorkspace(rootDir)) {
-			Properties properties = BladeUtil.getGradleProperties(rootDir);
+		if (WorkspaceUtil.isWorkspace(rootDir)) {
+			Properties properties = WorkspaceUtil.getGradleProperties(rootDir);
 
 			String liferayHomePath = properties.getProperty(WorkspaceConstants.DEFAULT_LIFERAY_HOME_DIR_PROPERTY);
 
@@ -134,7 +142,7 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 				}
 			}
 			catch (Exception e) {
-				blade.error("Please execute this command from a Liferay project");
+				bladeCLI.error("Please execute this command from a Liferay project");
 			}
 		}
 	}
@@ -144,35 +152,27 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 		return ServerStartArgs.class;
 	}
 
+	public Collection<Process> getProcesses() {
+		return _processes;
+	}
+
 	private void _commandServer(Path dir, String serverType) throws Exception {
-		BladeCLI blade = getBladeCLI();
+		BladeCLI bladeCLI = getBladeCLI();
 
 		if (Files.notExists(dir) || BladeUtil.isDirEmpty(dir)) {
-			blade.error(
+			bladeCLI.error(
 				" bundles folder does not exist in Liferay Workspace, execute 'gradlew initBundle' in order to " +
 					"create it.");
 
 			return;
 		}
 
-		Stream<Path> stream = Files.find(
-			dir, Integer.MAX_VALUE,
-			(file, bbfa) -> {
-				Path fileName = file.getFileName();
-
-				String fileNameString = String.valueOf(fileName);
-
-				return fileNameString.startsWith(serverType) && Files.isDirectory(file);
-			});
-
-		Optional<Path> server = stream.findFirst();
-
-		stream.close();
+		Optional<Path> serverFolder = ServerUtil.findServerFolder(dir, serverType);
 
 		boolean success = false;
 
-		if (server.isPresent()) {
-			Path file = server.get();
+		if (serverFolder.isPresent()) {
+			Path file = serverFolder.get();
 
 			if (serverType.equals("tomcat")) {
 				_commmandTomcat(file);
@@ -187,7 +187,7 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 		}
 
 		if (!success) {
-			blade.error(serverType + " not supported");
+			bladeCLI.error(serverType + " not supported");
 		}
 	}
 
@@ -197,11 +197,7 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 
 		Map<String, String> enviroment = new HashMap<>();
 
-		String executable = "./standalone.sh";
-
-		if (BladeUtil.isWindows()) {
-			executable = "standalone.bat";
-		}
+		String executable = ServerUtil.getJBossWildflyExecutable();
 
 		String debug = "";
 
@@ -211,7 +207,10 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 
 		Path binPath = dir.resolve("bin");
 
-		Process process = BladeUtil.startProcess(bladeCLI, executable + debug, binPath.toFile(), enviroment, false);
+		Process process = BladeUtil.startProcess(
+			executable + debug, binPath.toFile(), enviroment, bladeCLI.out(), bladeCLI.err());
+
+		_processes.add(process);
 
 		process.waitFor();
 	}
@@ -224,18 +223,15 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 
 		enviroment.put("CATALINA_PID", "catalina.pid");
 
-		String executable = "./catalina.sh";
-
-		if (BladeUtil.isWindows()) {
-			executable = "catalina.bat";
-		}
+		String executable = ServerUtil.getTomcatExecutable();
 
 		String startCommand = " run";
 
 		if (serverStartArgs.isBackground()) {
 			startCommand = " start";
 		}
-		else if (serverStartArgs.isDebug()) {
+
+		if (serverStartArgs.isDebug()) {
 			startCommand = " jpda " + startCommand;
 		}
 
@@ -254,7 +250,9 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 		Path binPath = dir.resolve("bin");
 
 		final Process process = BladeUtil.startProcess(
-			bladeCLI, executable + startCommand, binPath.toFile(), enviroment, false);
+			executable + startCommand, binPath.toFile(), enviroment, bladeCLI.out(), bladeCLI.err());
+
+		_processes.add(process);
 
 		Runtime runtime = Runtime.getRuntime();
 
@@ -274,11 +272,14 @@ public class ServerStartCommand extends BaseCommand<ServerStartArgs> {
 			});
 
 		if (serverStartArgs.isBackground() && serverStartArgs.isTail()) {
-			Process tailProcess = BladeUtil.startProcess(
-				bladeCLI, "tail -f catalina.out", logsPath.toFile(), enviroment);
+			Process tailProcess = BladeUtil.startProcess("tail -f catalina.out", logsPath.toFile(), enviroment);
+
+			_processes.add(tailProcess);
 
 			tailProcess.waitFor();
 		}
 	}
+
+	private Collection<Process> _processes = new HashSet<>();
 
 }

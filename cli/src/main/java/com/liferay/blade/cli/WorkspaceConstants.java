@@ -16,8 +16,6 @@
 
 package com.liferay.blade.cli;
 
-import java.util.regex.Pattern;
-
 /**
  * @author David Truong
  * @author Gregory Amerson
@@ -27,6 +25,10 @@ public class WorkspaceConstants {
 	public static final String DEFAULT_BUNDLE_ARTIFACT_NAME = "portal-tomcat-bundle";
 
 	public static final String DEFAULT_BUNDLE_ARTIFACT_NAME_PROPERTY = "liferay.workspace.bundle.artifact.name";
+
+	public static final String DEFAULT_EXT_DIR = "ext";
+
+	public static final String DEFAULT_EXT_DIR_PROPERTY = "liferay.workspace.ext.dir";
 
 	public static final String DEFAULT_LIFERAY_HOME_DIR = "bundles";
 
@@ -47,8 +49,5 @@ public class WorkspaceConstants {
 	public static final String DEFAULT_WARS_DIR = "wars";
 
 	public static final String DEFAULT_WARS_DIR_PROPERTY = "liferay.workspace.wars.dir";
-
-	public static final Pattern patternWorkspacePlugin = Pattern.compile(
-		".*apply\\s*plugin\\s*:\\s*[\'\"]com\\.liferay\\.workspace[\'\"]\\s*$", Pattern.MULTILINE | Pattern.DOTALL);
 
 }

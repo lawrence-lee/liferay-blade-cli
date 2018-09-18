@@ -38,13 +38,17 @@ public class OutputsCommand extends BaseCommand<OutputsArgs> {
 	public void execute() throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		final File base = bladeCLI.getBase();
+		BaseArgs args = bladeCLI.getBladeArgs();
+
+		final File base = new File(args.getBase());
 
 		final Path basePath = base.toPath();
 
 		final Path basePathRoot = basePath.getRoot();
 
-		final Set<File> outputs = GradleTooling.getOutputFiles(bladeCLI.getCacheDir(), base);
+		Path cachePath = bladeCLI.getCachePath();
+
+		final Set<File> outputs = GradleTooling.getOutputFiles(cachePath.toFile(), base);
 
 		for (File output : outputs) {
 			Path outputPath = output.toPath();

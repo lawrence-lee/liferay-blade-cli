@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.dto.BundleDTO;
 
 /**
@@ -81,9 +82,13 @@ public class DeployCommand extends BaseCommand<DeployArgs> {
 
 		GradleExec gradleExec = new GradleExec(bladeCLI);
 
-		Set<File> outputFiles = GradleTooling.getOutputFiles(bladeCLI.getCacheDir(), bladeCLI.getBase());
+		Path cachePath = bladeCLI.getCachePath();
 
 		DeployArgs deployArgs = getArgs();
+
+		File baseDir = new File(deployArgs.getBase());
+
+		Set<File> outputFiles = GradleTooling.getOutputFiles(cachePath.toFile(), baseDir);
 
 		if (deployArgs.isWatch()) {
 			_deployWatch(gradleExec, outputFiles, host, port);
@@ -98,19 +103,6 @@ public class DeployCommand extends BaseCommand<DeployArgs> {
 		return DeployArgs.class;
 	}
 
-	private static void _deployWar(File file, LiferayBundleDeployer deployer) throws Exception {
-		URI uri = file.toURI();
-
-		long bundleId = deployer.install(uri);
-
-		if (bundleId > 0) {
-			deployer.start(bundleId);
-		}
-		else {
-			throw new Exception("Failed to deploy war: " + file.getAbsolutePath());
-		}
-	}
-
 	private void _addError(String msg) {
 		getBladeCLI().addErrors("deploy", Collections.singleton(msg));
 	}
@@ -120,7 +112,7 @@ public class DeployCommand extends BaseCommand<DeployArgs> {
 	}
 
 	private void _deploy(GradleExec gradle, Set<File> outputFiles, String host, int port) throws Exception {
-		ProcessResult processResult = gradle.executeGradleCommand("assemble -x check");
+		ProcessResult processResult = gradle.executeTask("assemble -x check");
 
 		int resultCode = processResult.getResultCode();
 
@@ -195,6 +187,36 @@ public class DeployCommand extends BaseCommand<DeployArgs> {
 		}
 	}
 
+	private void _deployWar(File file, LiferayBundleDeployer liferayBundleDeployer) throws Exception {
+		URI uri = file.toURI();
+
+		long bundleId = liferayBundleDeployer.install(uri);
+
+		if (bundleId > 0) {
+			BladeCLI bladeCLI = getBladeCLI();
+
+			PrintStream out = bladeCLI.out();
+
+			out.println("Installed bundle " + bundleId);
+
+			BundleDTO bundle = liferayBundleDeployer.getBundle(bundleId);
+
+			if (bundle.state == Bundle.INSTALLED) {
+				liferayBundleDeployer.start(bundleId);
+
+				out.println("Started bundle " + bundleId);
+			}
+			else if (bundle.state == Bundle.ACTIVE) {
+				liferayBundleDeployer.update(bundleId, uri);
+
+				out.println("Updated bundle " + bundleId);
+			}
+		}
+		else {
+			throw new Exception("Failed to deploy war: " + file.getAbsolutePath());
+		}
+	}
+
 	private void _deployWatch(final GradleExec gradleExec, final Set<File> outputFiles, String host, int port)
 		throws Exception {
 
@@ -215,7 +237,7 @@ public class DeployCommand extends BaseCommand<DeployArgs> {
 			@Override
 			public void run() {
 				try {
-					gradleExec.executeGradleCommand("assemble -x check -t");
+					gradleExec.executeTask("assemble -x check -t");
 				}
 				catch (Exception e) {
 					String message = e.getMessage();
@@ -264,7 +286,9 @@ public class DeployCommand extends BaseCommand<DeployArgs> {
 
 		};
 
-		File base = bladeCLI.getBase();
+		BaseArgs args = bladeCLI.getBladeArgs();
+
+		File base = new File(args.getBase());
 
 		new FileWatcher(base.toPath(), true, consumer);
 	}
@@ -327,15 +351,20 @@ public class DeployCommand extends BaseCommand<DeployArgs> {
 
 			name = name.toLowerCase();
 
-			Domain bundle = Domain.domain(file);
-
-			Entry<String, Attrs> bsn = bundle.getBundleSymbolicName();
-
-			if (bsn != null) {
-				_deployBundle(file, client, bundle, bsn);
-			}
-			else if (name.endsWith(".war")) {
+			if (name.endsWith(".war")) {
 				_deployWar(file, client);
+			}
+			else {
+				Domain bundle = Domain.domain(file);
+
+				Entry<String, Attrs> bsn = bundle.getBundleSymbolicName();
+
+				if (bsn != null) {
+					_deployBundle(file, client, bundle, bsn);
+				}
+				else {
+					getBladeCLI().err("Unable to install or update " + file.getName() + "as it is not a bundle.");
+				}
 			}
 		}
 	}

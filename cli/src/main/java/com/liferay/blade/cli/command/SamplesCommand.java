@@ -19,6 +19,7 @@ package com.liferay.blade.cli.command;
 import com.liferay.blade.cli.BladeCLI;
 import com.liferay.blade.cli.util.BladeUtil;
 import com.liferay.blade.cli.util.FileUtil;
+import com.liferay.blade.cli.util.WorkspaceUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,10 +85,12 @@ public class SamplesCommand extends BaseCommand<SamplesArgs> {
 		File workDir = samplesArgs.getDir();
 
 		if (workDir == null) {
-			workDir = bladeCLI.getBase();
+			workDir = new File(samplesArgs.getBase());
 		}
 
-		File bladeRepo = new File(bladeCLI.getCacheDir(), _BLADE_REPO_NAME);
+		Path cachePath = bladeCLI.getCachePath();
+
+		File bladeRepo = new File(cachePath.toFile(), _BLADE_REPO_NAME);
 
 		File gradleSamples = new File(bladeRepo, "gradle");
 
@@ -127,7 +130,9 @@ public class SamplesCommand extends BaseCommand<SamplesArgs> {
 	private boolean _downloadBladeRepoIfNeeded() throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		File bladeRepoArchive = new File(bladeCLI.getCacheDir(), _BLADE_REPO_ARCHIVE_NAME);
+		Path cachePath = bladeCLI.getCachePath();
+
+		File bladeRepoArchive = new File(cachePath.toFile(), _BLADE_REPO_ARCHIVE_NAME);
 
 		Date now = new Date();
 
@@ -157,15 +162,19 @@ public class SamplesCommand extends BaseCommand<SamplesArgs> {
 	private void _extractBladeRepo() throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		File bladeRepoArchive = new File(bladeCLI.getCacheDir(), _BLADE_REPO_ARCHIVE_NAME);
+		Path cachePath = bladeCLI.getCachePath();
 
-		BladeUtil.unzip(bladeRepoArchive, bladeCLI.getCacheDir(), null);
+		File bladeRepoArchive = new File(cachePath.toFile(), _BLADE_REPO_ARCHIVE_NAME);
+
+		BladeUtil.unzip(bladeRepoArchive, cachePath.toFile(), null);
 	}
 
 	private void _listSamples() throws IOException {
-		BladeCLI blade = getBladeCLI();
+		BladeCLI bladeCLI = getBladeCLI();
 
-		File bladeRepo = new File(blade.getCacheDir(), _BLADE_REPO_NAME);
+		Path cachePath = bladeCLI.getCachePath();
+
+		File bladeRepo = new File(cachePath.toFile(), _BLADE_REPO_NAME);
 
 		File gradleSamples = new File(bladeRepo, "gradle");
 
@@ -197,8 +206,8 @@ public class SamplesCommand extends BaseCommand<SamplesArgs> {
 			}
 		}
 
-		blade.out("Please provide the sample project name to create, e.g. \"blade samples jsp-portlet\"\n");
-		blade.out("Currently available categories and samples:");
+		bladeCLI.out("Please provide the sample project name to create, e.g. \"blade samples jsp-portlet\"\n");
+		bladeCLI.out("Currently available categories and samples:");
 
 		Set<String> keySet = samplesMap.keySet();
 
@@ -206,13 +215,13 @@ public class SamplesCommand extends BaseCommand<SamplesArgs> {
 
 		stream.sorted(
 		).peek(
-			category -> blade.out("\t " + category + ":")
+			category -> bladeCLI.out("\t " + category + ":")
 		).map(
 			samplesMap::get
 		).flatMap(
 			category -> category.stream()
 		).forEach(
-			sample -> blade.out("\t\t " + sample)
+			sample -> bladeCLI.out("\t\t " + sample)
 		);
 	}
 
@@ -289,15 +298,17 @@ public class SamplesCommand extends BaseCommand<SamplesArgs> {
 	}
 
 	private void _updateBuildGradle(File dir) throws Exception {
-		BladeCLI blade = getBladeCLI();
+		BladeCLI bladeCLI = getBladeCLI();
 
-		File bladeRepo = new File(blade.getCacheDir(), _BLADE_REPO_NAME);
+		Path cachePath = bladeCLI.getCachePath();
+
+		File bladeRepo = new File(cachePath.toFile(), _BLADE_REPO_NAME);
 
 		File sampleGradleFile = new File(dir, "build.gradle");
 
 		String script = BladeUtil.read(sampleGradleFile);
 
-		if (!BladeUtil.isWorkspace(dir)) {
+		if (!WorkspaceUtil.isWorkspace(dir)) {
 			File parentBuildGradleFile = new File(bladeRepo, "gradle/build.gradle");
 
 			String parentBuildScript = _parseGradleScript(BladeUtil.read(parentBuildGradleFile), "buildscript", false);
