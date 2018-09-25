@@ -31,9 +31,18 @@ public class SamplesArgs extends BaseArgs {
 		return _dir;
 	}
 
+	public String getLiferayVersion() {
+		return _liferayVersion;
+	}
+
 	public String getSampleName() {
 		return _sampleName;
 	}
+
+	public void setLiferayVersion(String liferayVersion) {
+		_liferayVersion = liferayVersion;
+	}
+
 
 	@Parameter(description = "The directory where to create the new project.", names = {"-d", "--dir"})
 	private File _dir;
@@ -41,4 +50,5 @@ public class SamplesArgs extends BaseArgs {
 	@Parameter(description = "name")
 	private String _sampleName;
 
+	private String _liferayVersion;
 }
