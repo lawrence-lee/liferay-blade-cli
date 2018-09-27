@@ -21,6 +21,7 @@ import aQute.lib.io.IO;
 import com.liferay.blade.cli.BladeTestResults;
 import com.liferay.blade.cli.GradleRunnerUtil;
 import com.liferay.blade.cli.TestUtil;
+import com.liferay.blade.cli.util.WorkspaceUtil;
 
 import java.io.File;
 
@@ -50,6 +51,32 @@ public class SamplesCommandTest {
 		TestUtil.runBlade(temporaryFolder.getRoot(), args);
 
 		File projectDir = new File(temporaryFolder.getRoot(), "test/friendly-url");
+
+		Assert.assertTrue(projectDir.exists());
+
+		File buildFile = IO.getFile(projectDir, "build.gradle");
+
+		Assert.assertTrue(buildFile.exists());
+
+		String projectPath = projectDir.getPath();
+
+		TestUtil.verifyBuild(projectPath, "com.liferay.blade.friendly.url-1.0.0.jar");
+	}
+
+	@Test
+	public void testGetSampleDefaultInWorkspace() throws Exception {
+		File tempRoot = temporaryFolder.getRoot();
+
+		File workspace70 = new File(tempRoot, "workspace70");
+
+		_makeWorkspace70(workspace70);
+
+		String[] args =
+			{"--base", workspace70.getAbsolutePath(), "samples", "-d", workspace70.getAbsolutePath() + "/modules", "friendly-url"};
+
+		TestUtil.runBlade(workspace70.getAbsoluteFile(), args);
+
+		File projectDir = new File(workspace70, "modules/friendly-url");
 
 		Assert.assertTrue(projectDir.exists());
 
@@ -165,5 +192,21 @@ public class SamplesCommandTest {
 
 	@Rule
 	public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+	private void _makeWorkspace(File workspace) throws Exception {
+		String[] args = {"--base", workspace.getParentFile().getPath(), "init", workspace.getName()};
+
+		TestUtil.runBlade(args);
+
+		Assert.assertTrue(WorkspaceUtil.isWorkspace(workspace));
+	}
+
+	private void _makeWorkspace70(File workspace) throws Exception {
+		String[] args = {"--base", workspace.getParentFile().getPath(), "init", workspace.getName(), "-v", "7.0"};
+
+		TestUtil.runBlade(args);
+
+		Assert.assertTrue(WorkspaceUtil.isWorkspace(workspace));
+	}
 
 }
