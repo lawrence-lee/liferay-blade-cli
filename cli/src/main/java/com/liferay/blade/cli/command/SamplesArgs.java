@@ -43,12 +43,12 @@ public class SamplesArgs extends BaseArgs {
 		_liferayVersion = liferayVersion;
 	}
 
-
 	@Parameter(description = "The directory where to create the new project.", names = {"-d", "--dir"})
 	private File _dir;
+
+	private String _liferayVersion;
 
 	@Parameter(description = "name")
 	private String _sampleName;
 
-	private String _liferayVersion;
 }
