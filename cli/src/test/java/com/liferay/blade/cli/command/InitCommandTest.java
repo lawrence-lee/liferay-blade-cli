@@ -258,7 +258,8 @@ public class InitCommandTest {
 
 		Assert.assertTrue(contents, contents.contains("7.0.6-ga7"));
 
-		String properties = new String(Files.readAllBytes(new File(_workspaceDir, ".blade/settings.properties").toPath()));
+		String properties = new String(
+			Files.readAllBytes(new File(_workspaceDir, ".blade/settings.properties").toPath()));
 
 		Assert.assertTrue(properties, properties.contains("default.liferay.version=7.0"));
 	}
@@ -275,7 +276,8 @@ public class InitCommandTest {
 
 		Assert.assertTrue(contents, contents.contains("7.1.0-ga1"));
 
-		String properties = new String(Files.readAllBytes(new File(_workspaceDir, ".blade/settings.properties").toPath()));
+		String properties = new String(
+			Files.readAllBytes(new File(_workspaceDir, ".blade/settings.properties").toPath()));
 
 		Assert.assertTrue(properties, properties.contains("default.liferay.version=7.1"));
 	}
@@ -292,7 +294,8 @@ public class InitCommandTest {
 
 		Assert.assertTrue(contents, contents.contains("7.1.0-ga1"));
 
-		String properties = new String(Files.readAllBytes(new File(_workspaceDir, ".blade/settings.properties").toPath()));
+		String properties = new String(
+			Files.readAllBytes(new File(_workspaceDir, ".blade/settings.properties").toPath()));
 
 		Assert.assertTrue(properties, properties.contains("default.liferay.version=7.1"));
 	}
