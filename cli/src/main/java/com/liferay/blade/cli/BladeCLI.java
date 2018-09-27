@@ -328,18 +328,18 @@ public class BladeCLI implements Runnable {
 					createArgs.setLiferayVersion(liferayVersion);
 				}
 				else if (_commandArgs instanceof SamplesArgs) {
-					SamplesArgs sampleArgs = (SamplesArgs)_commandArgs;
+					SamplesArgs samplesArgs = (SamplesArgs)_commandArgs;
 
 					String liferayVersion;
 
 					if (WorkspaceUtil.isWorkspace(this)) {
 						liferayVersion = getDefaultLiferayVersion();
-
-					} else {
+					}
+					else {
 						liferayVersion = "7.1";
 					}
 
-					sampleArgs.setLiferayVersion(liferayVersion);
+					samplesArgs.setLiferayVersion(liferayVersion);
 				}
 
 				run();
