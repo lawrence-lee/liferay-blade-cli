@@ -34,10 +34,6 @@ artifacts {
 	 testApi cliTestJar
 }
 
-check {
-	dependsOn testVersionCommand
-}
-
 clean.doFirst {
 	delete "${buildDir}/maven-profile-1.0.0.jar", "${buildDir}/tooling.zip", "${buildDir}/wrapper.zip"
 }
