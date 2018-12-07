@@ -23,7 +23,6 @@ task copyMavenProfileJar(type: Copy)
 task createToolingZip(type:Zip)
 task createWrapperZip(type:Zip)
 task downloadPortal(type: Download)
-task testVersionCommand
 task unzipPortal(type: Copy)
 
 configurations {
@@ -216,3 +215,5 @@ unzipPortal {
 }
 
 version = "3.4.0-SNAPSHOT"
+
+apply from: "blade-jar-tests.gradle"
