@@ -36,7 +36,7 @@ public class ServerInitCommand extends BaseCommand<ServerInitArgs> {
 	public void execute() throws Exception {
 		BladeCLI bladeCLI = getBladeCLI();
 
-		BaseArgs args = bladeCLI.getArgs();
+		ServerInitArgs args = getArgs();
 
 		File baseDir = new File(args.getBase());
 
@@ -45,6 +45,14 @@ public class ServerInitCommand extends BaseCommand<ServerInitArgs> {
 				bladeCLI.out("Executing gradle task initBundle...\n");
 
 				GradleExec gradleExec = new GradleExec(bladeCLI);
+
+				StringBuilder command = new StringBuilder("initBundle");
+
+				String liferayWorkspaceEnvironment = args.getLiferayWorkspaceEnvironment();
+
+				if (liferayWorkspaceEnvironment != null && liferayWorkspaceEnvironment.length() > 0) {
+					command.append(" -Pliferay.workspace.environment=" + args.getLiferayWorkspaceEnvironment());
+				}
 
 				ProcessResult processResult = gradleExec.executeTask("initBundle", false);
 
