@@ -62,10 +62,33 @@ public class SamplesCommandTest {
 	}
 
 	@Test
-	public void testGetSample() throws Exception {
+	public void testGetSample71() throws Exception {
 		File root = temporaryFolder.newFolder("samplesroot");
 
 		String[] args = {"samples", "-v", "7.1", "-d", root.getPath() + "/test", "friendly-url"};
+
+		BladeTest bladeTest = _getBladeTest();
+
+		bladeTest.run(args);
+
+		File projectDir = new File(root, "test/friendly-url");
+
+		Assert.assertTrue(projectDir.exists());
+
+		File buildFile = new File(projectDir, "build.gradle");
+
+		Assert.assertTrue(buildFile.exists());
+
+		String projectPath = projectDir.getPath();
+
+		TestUtil.verifyBuild(projectPath, "com.liferay.blade.friendly.url-1.0.0.jar");
+	}
+
+	@Test
+	public void testGetSample72() throws Exception {
+		File root = temporaryFolder.newFolder("samplesroot");
+
+		String[] args = {"samples", "-v", "7.2", "-d", root.getPath() + "/test", "friendly-url"};
 
 		BladeTest bladeTest = _getBladeTest();
 
@@ -139,7 +162,34 @@ public class SamplesCommandTest {
 	}
 
 	@Test
-	public void testGetSampleWithDependencies() throws Exception {
+	public void testGetSampleMaven72() throws Exception {
+		File root = temporaryFolder.getRoot();
+
+		String[] args = {"samples", "-d", root.getPath() + "/test", "-b", "maven", "-v", "7.2", "friendly-url"};
+
+		BladeTest bladeTest = _getBladeTest();
+
+		bladeTest.run(args);
+
+		File projectDir = new File(root, "test/friendly-url");
+
+		Assert.assertTrue(projectDir.exists());
+
+		File gradleBuildFile = new File(projectDir, "build.gradle");
+		File mavenBuildFile = new File(projectDir, "pom.xml");
+
+		Assert.assertFalse(gradleBuildFile.exists());
+		Assert.assertTrue(mavenBuildFile.exists());
+
+		String content = FileUtil.read(mavenBuildFile);
+
+		Assert.assertTrue(
+			content,
+			content.contains("<artifactId>com.liferay.portal.kernel</artifactId>\n\t\t\t<version>4.4.0</version>"));
+	}
+
+	@Test
+	public void testGetSampleWithDependencies71() throws Exception {
 		File root = temporaryFolder.getRoot();
 
 		String[] args = {"samples", "-v", "7.1", "-d", root.getPath() + "/test", "rest"};
@@ -162,7 +212,30 @@ public class SamplesCommandTest {
 	}
 
 	@Test
-	public void testGetSampleWithGradleWrapper() throws Exception {
+	public void testGetSampleWithDependencies72() throws Exception {
+		File root = temporaryFolder.getRoot();
+
+		String[] args = {"samples", "-v", "7.2", "-d", root.getPath() + "/test", "rest"};
+
+		BladeTest bladeTest = _getBladeTest();
+
+		bladeTest.run(args);
+
+		File projectDir = new File(root, "test/rest");
+
+		Assert.assertTrue(projectDir.exists());
+
+		File buildFile = new File(projectDir, "build.gradle");
+
+		Assert.assertTrue(buildFile.exists());
+
+		String projectPath = projectDir.getPath();
+
+		TestUtil.verifyBuild(projectPath, "com.liferay.blade.rest-1.0.0.jar");
+	}
+
+	@Test
+	public void testGetSampleWithGradleWrapper71() throws Exception {
 		File root = temporaryFolder.getRoot();
 
 		String[] args = {"samples", "-v", "7.1", "-d", root.getPath() + "/test", "authenticator-shiro"};
@@ -194,7 +267,39 @@ public class SamplesCommandTest {
 	}
 
 	@Test
-	public void testGetSampleWithGradleWrapperExisting() throws Exception {
+	public void testGetSampleWithGradleWrapper72() throws Exception {
+		File root = temporaryFolder.getRoot();
+
+		String[] args = {"samples", "-v", "7.2", "-d", root.getPath() + "/test", "authenticator-shiro"};
+
+		BladeTest bladeTest = _getBladeTest();
+
+		bladeTest.run(args);
+
+		File projectDir = new File(root, "test/authenticator-shiro");
+
+		Assert.assertTrue(projectDir.exists());
+
+		File buildFile = new File(projectDir, "build.gradle");
+
+		File gradleWrapperJar = new File(projectDir, "gradle/wrapper/gradle-wrapper.jar");
+
+		File gradleWrapperProperties = new File(projectDir, "gradle/wrapper/gradle-wrapper.properties");
+
+		File gradleWrapperShell = new File(projectDir, "gradlew");
+
+		Assert.assertTrue(buildFile.exists());
+		Assert.assertTrue(gradleWrapperJar.exists());
+		Assert.assertTrue(gradleWrapperProperties.exists());
+		Assert.assertTrue(gradleWrapperShell.exists());
+
+		String projectPath = projectDir.getPath();
+
+		TestUtil.verifyBuild(projectPath, "com.liferay.blade.authenticator.shiro-1.0.0.jar");
+	}
+
+	@Test
+	public void testGetSampleWithGradleWrapperExisting71() throws Exception {
 		String[] initArgs = {"--base", _rootDir.getPath() + "/test/workspace", "init"};
 
 		BladeTestResults bladeTestResults = TestUtil.runBlade(_rootDir, _extensionsDir, initArgs);
@@ -205,6 +310,52 @@ public class SamplesCommandTest {
 
 		String[] samplesArgs = {
 			"samples", "-v", "7.1", "-d", _rootDir.getPath() + "/test/workspace/modules", "auth-failure"
+		};
+
+		bladeTestResults = TestUtil.runBlade(_rootDir, _extensionsDir, samplesArgs);
+
+		output = bladeTestResults.getOutput();
+
+		Assert.assertTrue(output, (output == null) || output.isEmpty());
+
+		File projectDir = new File(temporaryFolder.getRoot(), "test/workspace/modules/auth-failure");
+
+		Assert.assertTrue(projectDir.exists());
+
+		File buildFile = new File(projectDir, "build.gradle");
+
+		File gradleWrapperJar = new File(projectDir, "gradle/wrapper/gradle-wrapper.jar");
+
+		File gradleWrapperProperties = new File(projectDir, "gradle/wrapper/gradle-wrapper.properties");
+
+		File gradleWrapperShell = new File(projectDir, "gradlew");
+
+		Assert.assertTrue(buildFile.exists());
+		Assert.assertFalse(gradleWrapperJar.exists());
+		Assert.assertFalse(gradleWrapperProperties.exists());
+		Assert.assertFalse(gradleWrapperShell.exists());
+
+		File workspaceDir = new File(temporaryFolder.getRoot(), "test/workspace");
+
+		BuildTask buildTask = GradleRunnerUtil.executeGradleRunner(workspaceDir.getPath(), "jar");
+
+		GradleRunnerUtil.verifyGradleRunnerOutput(buildTask);
+
+		GradleRunnerUtil.verifyBuildOutput(projectDir.toString(), "com.liferay.blade.auth.failure-1.0.0.jar");
+	}
+
+	@Test
+	public void testGetSampleWithGradleWrapperExisting72() throws Exception {
+		String[] initArgs = {"--base", _rootDir.getPath() + "/test/workspace", "init"};
+
+		BladeTestResults bladeTestResults = TestUtil.runBlade(_rootDir, _extensionsDir, initArgs);
+
+		String output = bladeTestResults.getOutput();
+
+		Assert.assertTrue(output, (output == null) || output.isEmpty());
+
+		String[] samplesArgs = {
+			"samples", "-v", "7.2", "-d", _rootDir.getPath() + "/test/workspace/modules", "auth-failure"
 		};
 
 		bladeTestResults = TestUtil.runBlade(_rootDir, _extensionsDir, samplesArgs);
@@ -294,8 +445,44 @@ public class SamplesCommandTest {
 	}
 
 	@Test
-	public void testListSamples() throws Exception {
+	public void testGetSampleWithVersion72() throws Exception {
+		File root = temporaryFolder.getRoot();
+
+		String[] args = {"samples", "-d", root.getPath() + "/test71", "-v", "7.2", "jsp-portlet"};
+
+		BladeTest bladeTest = _getBladeTest();
+
+		bladeTest.run(args);
+
+		File projectDir = new File(root, "test71/jsp-portlet");
+
+		Assert.assertTrue(projectDir.exists());
+
+		File buildFile = new File(projectDir, "build.gradle");
+
+		String content = FileUtil.read(buildFile);
+
+		Assert.assertTrue(buildFile.exists());
+
+		Assert.assertTrue(content, content.contains("\"com.liferay.portal.kernel\", version: \"4.4.0\""));
+
+		String projectPath = projectDir.getPath();
+
+		TestUtil.verifyBuild(projectPath, "com.liferay.blade.jsp.portlet-1.0.0.jar");
+	}
+
+	@Test
+	public void testListSamples71() throws Exception {
 		BladeTestResults bladeTestResults = TestUtil.runBlade(_rootDir, _extensionsDir, "samples", "-v", "7.1");
+
+		String output = bladeTestResults.getOutput();
+
+		Assert.assertTrue(output.contains("ds-portlet"));
+	}
+
+	@Test
+	public void testListSamples72() throws Exception {
+		BladeTestResults bladeTestResults = TestUtil.runBlade(_rootDir, _extensionsDir, "samples", "-v", "7.2");
 
 		String output = bladeTestResults.getOutput();
 
