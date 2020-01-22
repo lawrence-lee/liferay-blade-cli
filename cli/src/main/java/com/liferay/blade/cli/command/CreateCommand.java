@@ -275,7 +275,11 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 				workspaceProviderGradle.isDependencyManagementEnabled(baseDir));
 		}
 
-		projectTemplatesArgs.setLiferayVersion(_getLiferayVersion(bladeCLI, createArgs));
+		String liferayVersion = _getLiferayVersion(bladeCLI, createArgs);
+
+		if (liferayVersion != null) {
+			projectTemplatesArgs.setLiferayVersion(liferayVersion);
+		}
 
 		projectTemplatesArgs.setName(name);
 		projectTemplatesArgs.setPackageName(createArgs.getPackageName());
