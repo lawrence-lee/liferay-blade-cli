@@ -889,7 +889,12 @@ public class BladeCLI {
 
 			_out = System.out;
 
-			updateCommand.execute();
+			long timeout = 5000L;
+			long startTime = System.currentTimeMillis();
+
+			while (System.currentTimeMillis() - startTime < timeout) {
+				updateCommand.execute();
+			}
 		}
 		finally {
 			System.setOut(currentStdOut);
