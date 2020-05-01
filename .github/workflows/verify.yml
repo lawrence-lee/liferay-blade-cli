@@ -57,7 +57,7 @@ jobs:
           ./run-tests.sh
       - name: Upload tests zip
         uses: actions/upload-artifact@v1
-        if: failure()
+        if: failure() || success()
         with:
           name: LinuxJDK8-tests.zip
           path: tests.zip
@@ -86,7 +86,7 @@ jobs:
           ./run-tests.sh
       - name: Upload tests zip
         uses: actions/upload-artifact@v1
-        if: failure()
+        if: failure() || success()
         with:
           name: LinuxJDK11-tests.zip
           path: tests.zip
@@ -115,7 +115,7 @@ jobs:
           ./run-tests.sh
       - name: Upload tests zip
         uses: actions/upload-artifact@v1
-        if: failure()
+        if: failure() || success()
         with:
           name: MacOSJDK8-tests.zip
           path: tests.zip
