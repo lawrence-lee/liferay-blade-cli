@@ -34,7 +34,7 @@ jobs:
           ./gradlew --no-daemon checkSourceFormatting
   LinuxJDK8:
     name: Linux JDK8
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -55,13 +55,13 @@ jobs:
           ./run-tests.sh
       - name: Upload tests zip
         uses: actions/upload-artifact@v1
-        if: failure() || success()
+        if: failure()
         with:
           name: LinuxJDK8-tests.zip
           path: tests.zip
   LinuxJDK11:
     name: Linux JDK11
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v1
