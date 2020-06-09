@@ -27,7 +27,6 @@ import com.liferay.blade.cli.XMLTestUtil;
 import com.liferay.blade.extensions.maven.profile.internal.MavenExecutor;
 
 import java.io.File;
-import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.regex.Matcher;
@@ -47,7 +46,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 /**
  * @author Gregory Amerson
