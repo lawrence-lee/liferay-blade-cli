@@ -518,6 +518,10 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 
 		String liferayVersion = workspaceProvider.getLiferayVersion(dir);
 
+		if (liferayVersion == null) {
+			liferayVersion = createArgs.getLiferayVersion();
+		}
+
 		try {
 			Version version = Version.parseVersion(liferayVersion.replaceAll("-", "."));
 
@@ -525,10 +529,6 @@ public class CreateCommand extends BaseCommand<CreateArgs> {
 		}
 		catch (Exception exception) {
 			liferayVersion = liferayVersion.substring(0, 3);
-		}
-
-		if (liferayVersion == null) {
-			return createArgs.getLiferayVersion();
 		}
 
 		return liferayVersion;
